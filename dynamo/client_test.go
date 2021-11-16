@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 
@@ -60,6 +62,9 @@ func TestClient_PutItem(t *testing.T) {
 
 	testID := "uuid1-uuid-2uu-3-uuid4"
 	testName := "my item"
+	testReturnConsumedCapacity := aws.String("TOTAL")
+	testReturnItemCollectionMetrics := aws.String("SIZE")
+	testReturnValues := aws.String("ALL_OLD")
 
 	validItem := map[string]*dynamodb.AttributeValue{
 		idFieldName:   {S: aws.String(testID)},
@@ -131,6 +136,43 @@ func TestClient_PutItem(t *testing.T) {
 
 		actual, err := client.PutItem(ctx, testTableName,
 			putitem.WithItem(validItem))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, validItem, actual.Attributes)
+	})
+	t.Run("it sets all the parameters", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*MockDynamoDB)
+		filter := expression.Name(idFieldName).Equal(expression.Value(testID))
+		filter = expression.And(expression.Name(nameFieldName).Equal(expression.Value(testName)), filter)
+		expr, _ := expression.NewBuilder().WithFilter(filter).Build()
+
+		expectedInput := &dynamodb.PutItemInput{
+			Item:                        validItem,
+			TableName:                   aws.String(testTableName),
+			ReturnConsumedCapacity:      testReturnConsumedCapacity,
+			ReturnItemCollectionMetrics: testReturnItemCollectionMetrics,
+			ReturnValues:                testReturnValues,
+			ConditionExpression:         expr.Filter(),
+			ExpressionAttributeNames:    expr.Names(),
+			ExpressionAttributeValues:   expr.Values(),
+		}
+
+		m.On("PutItemWithContext",
+			ctx,
+			expectedInput,
+			mock.Anything).Return(&dynamodb.PutItemOutput{
+			Attributes: validItem,
+		}, nil)
+
+		actual, err := client.PutItem(ctx, testTableName,
+			putitem.WithItem(validItem),
+			putitem.WithReturnConsumedCapacity(testReturnConsumedCapacity),
+			putitem.WithReturnItemCollectionMetrics(testReturnItemCollectionMetrics),
+			putitem.WithReturnValues(testReturnValues),
+			putitem.WithConditionalExpression(&filter))
 
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
