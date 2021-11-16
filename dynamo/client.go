@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 
@@ -72,24 +70,12 @@ func (c *Client) PutItem(ctx context.Context, tableName string, putOptions ...pu
 		Item:      inputItem,
 	}
 
-	if options.FilterConditions != nil {
-		expr, err := expression.NewBuilder().WithFilter(*options.FilterConditions).Build()
-		if err != nil {
-			return nil, err
-		}
-
-		dynamoInput.ConditionExpression = expr.Filter()
-		dynamoInput.ExpressionAttributeNames = expr.Names()
-		dynamoInput.ExpressionAttributeValues = expr.Values()
-	}
-
 	result, err := c.awsClient.PutItemWithContext(ctx, dynamoInput)
 	if err != nil {
 		return nil, err
 	}
 
 	return &putitem.Result{
-		Attributes:       result.Attributes,
-		ConsumedCapacity: result.ConsumedCapacity,
+		Attributes: result.Attributes,
 	}, nil
 }
