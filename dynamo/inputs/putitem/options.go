@@ -1,7 +1,29 @@
 package putitem
 
+import (
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+)
+
 type Options struct {
-	Item interface{}
+	// input = expression.NewBuilder().WithFilter(ConditionalExpression)
+	//
+	// ConditionExpression = input.Filter()
+	// ExpressionAttributeNames = input.Names()
+	// ExpressionAttributeValues = input.Values()
+	ConditionalExpression *expression.ConditionBuilder
+
+	// maps to PutItemInput.Item
+	Item map[string]*dynamodb.AttributeValue
+
+	// maps to PutItemInput.ReturnConsumedCapacity
+	ReturnConsumedCapacity *string
+
+	// maps to PutItemInput.ReturnItemCollectionMetrics
+	ReturnItemCollectionMetrics *string
+
+	// maps to PutItemInput.ReturnValues
+	ReturnValues *string
 }
 
 type OptionFunc func(*Options)
@@ -16,11 +38,32 @@ func NewOptions(input ...OptionFunc) *Options {
 	return options
 }
 
-// WithItem
-//
-// WithItem marshals the input to a map[string]*dynamodb.AttributeValue using dynamodbattribute package
-func WithItem(item interface{}) OptionFunc {
+func WithItem(input map[string]*dynamodb.AttributeValue) OptionFunc {
 	return func(options *Options) {
-		options.Item = item
+		options.Item = input
+	}
+}
+
+func WithConditionalExpression(input *expression.ConditionBuilder) OptionFunc {
+	return func(options *Options) {
+		options.ConditionalExpression = input
+	}
+}
+
+func WithReturnConsumedCapacity(input *string) OptionFunc {
+	return func(options *Options) {
+		options.ReturnConsumedCapacity = input
+	}
+}
+
+func WithReturnItemCollectionMetrics(input *string) OptionFunc {
+	return func(options *Options) {
+		options.ReturnItemCollectionMetrics = input
+	}
+}
+
+func WithReturnValues(input *string) OptionFunc {
+	return func(options *Options) {
+		options.ReturnValues = input
 	}
 }

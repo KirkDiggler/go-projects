@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/putitem"
 
@@ -59,15 +59,23 @@ func (c *Client) PutItem(ctx context.Context, tableName string, putOptions ...pu
 		return nil, errors.New(requiredItemMsg)
 	}
 
-	// TODO see if options.Item is a a map[string]*dynamodb.AttributeValue and skip this step
-	inputItem, err := dynamodbattribute.MarshalMap(options.Item)
-	if err != nil {
-		return nil, err
+	dynamoInput := &dynamodb.PutItemInput{
+		TableName:                   aws.String(tableName),
+		ReturnConsumedCapacity:      options.ReturnConsumedCapacity,
+		ReturnItemCollectionMetrics: options.ReturnItemCollectionMetrics,
+		ReturnValues:                options.ReturnValues,
+		Item:                        options.Item,
 	}
 
-	dynamoInput := &dynamodb.PutItemInput{
-		TableName: aws.String(tableName),
-		Item:      inputItem,
+	if options.ConditionalExpression != nil {
+		expr, err := expression.NewBuilder().WithFilter(*options.ConditionalExpression).Build()
+		if err != nil {
+			return nil, err
+		}
+
+		dynamoInput.ConditionExpression = expr.Filter()
+		dynamoInput.ExpressionAttributeNames = expr.Names()
+		dynamoInput.ExpressionAttributeValues = expr.Values()
 	}
 
 	result, err := c.awsClient.PutItemWithContext(ctx, dynamoInput)
@@ -76,6 +84,8 @@ func (c *Client) PutItem(ctx context.Context, tableName string, putOptions ...pu
 	}
 
 	return &putitem.Result{
-		Attributes: result.Attributes,
+		Attributes:            result.Attributes,
+		ConsumedCapacity:      result.ConsumedCapacity,
+		ItemCollectionMetrics: result.ItemCollectionMetrics,
 	}, nil
 }

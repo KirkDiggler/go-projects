@@ -61,9 +61,9 @@ func TestClient_PutItem(t *testing.T) {
 	testID := "uuid1-uuid-2uu-3-uuid4"
 	testName := "my item"
 
-	validItem := map[string]string{
-		idFieldName:   testID,
-		nameFieldName: testName,
+	validItem := map[string]*dynamodb.AttributeValue{
+		idFieldName:   {S: aws.String(testID)},
+		nameFieldName: {S: aws.String(testName)},
 	}
 
 	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
@@ -108,7 +108,7 @@ func TestClient_PutItem(t *testing.T) {
 			ctx, mock.Anything, mock.Anything).Return(nil, expectedErr)
 
 		actual, err := client.PutItem(ctx, testTableName,
-			putitem.WithItem(&validItem))
+			putitem.WithItem(validItem))
 
 		assert.Nil(t, actual)
 		assert.NotNil(t, err)
@@ -119,26 +119,21 @@ func TestClient_PutItem(t *testing.T) {
 
 		m := client.awsClient.(*MockDynamoDB)
 
-		expected := map[string]*dynamodb.AttributeValue{
-			idFieldName:   {S: aws.String(validItem[idFieldName])},
-			nameFieldName: {S: aws.String(validItem[nameFieldName])},
-		}
-
 		m.On("PutItemWithContext",
 			ctx,
 			&dynamodb.PutItemInput{
-				Item:      expected,
+				Item:      validItem,
 				TableName: aws.String(testTableName),
 			},
 			mock.Anything).Return(&dynamodb.PutItemOutput{
-			Attributes: expected,
+			Attributes: validItem,
 		}, nil)
 
 		actual, err := client.PutItem(ctx, testTableName,
-			putitem.WithItem(&validItem))
+			putitem.WithItem(validItem))
 
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
-		assert.Equal(t, expected, actual.Attributes)
+		assert.Equal(t, validItem, actual.Attributes)
 	})
 }
