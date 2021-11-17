@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/deleteitem"
+
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -22,6 +24,8 @@ const (
 
 	requiredTableNameMsg = "tableName is a required parameter"
 	requiredItemMsg      = "item is required"
+
+	requiredKeyMsg = "key is required"
 )
 
 type Client struct {
@@ -45,9 +49,50 @@ func NewClient(cfg *ClientConfig) (*Client, error) {
 	}, nil
 }
 
+// DeleteItem
+func (c *Client) DeleteItem(ctx context.Context, tableName string, deleteOptions ...deleteitem.OptionFunc) (*deleteitem.Result, error) {
+	if len(tableName) < minLengthTableName {
+		return nil, errors.New(requiredTableNameMsg)
+	}
+
+	options := deleteitem.NewOptions(deleteOptions...)
+
+	if options.Key == nil {
+		return nil, errors.New(requiredKeyMsg)
+	}
+
+	dynamoInput := &dynamodb.DeleteItemInput{
+		Key:                         options.Key,
+		ReturnConsumedCapacity:      options.ReturnConsumedCapacity,
+		ReturnItemCollectionMetrics: options.ReturnItemCollectionMetrics,
+		ReturnValues:                options.ReturnValues,
+		TableName:                   aws.String(tableName),
+	}
+
+	if options.ConditionalExpression != nil {
+		expr, err := expression.NewBuilder().WithFilter(*options.ConditionalExpression).Build()
+		if err != nil {
+			return nil, err
+		}
+
+		dynamoInput.ConditionExpression = expr.Filter()
+		dynamoInput.ExpressionAttributeNames = expr.Names()
+		dynamoInput.ExpressionAttributeValues = expr.Values()
+	}
+
+	result, err := c.awsClient.DeleteItemWithContext(ctx, dynamoInput)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deleteitem.Result{
+		Attributes:            result.Attributes,
+		ConsumedCapacity:      result.ConsumedCapacity,
+		ItemCollectionMetrics: result.ItemCollectionMetrics,
+	}, nil
+}
+
 // PutItem
-//
-// PutItem can return aws Errors as well as simple errors.New()
 func (c *Client) PutItem(ctx context.Context, tableName string, putOptions ...putitem.OptionFunc) (*putitem.Result, error) {
 	if len(tableName) < minLengthTableName {
 		return nil, errors.New(requiredTableNameMsg)

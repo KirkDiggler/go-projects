@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/deleteitem"
+
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -53,6 +55,130 @@ func TestNewClient(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
 		assert.NotNil(t, actual.awsClient)
+	})
+}
+
+func TestClient_DeleteItem(t *testing.T) {
+	ctx := context.Background()
+	testTableName := "test-table-name"
+
+	testID := "uuid1-uuid2-uuid3-uuid4"
+	testName := "my item"
+	testReturnConsumedCapacity := aws.String("TOTAL")
+	testReturnItemCollectionMetrics := aws.String("SIZE")
+	testReturnValues := aws.String("ALL_OLD")
+
+	validKey := map[string]*dynamodb.AttributeValue{
+		idFieldName:   {S: aws.String(testID)},
+		nameFieldName: {S: aws.String(testName)},
+	}
+
+	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
+		client := setupFixture()
+
+		actual, err := client.DeleteItem(ctx, "")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+
+		actual, err = client.DeleteItem(ctx, "to")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+	})
+	t.Run("it requires a key to be set", func(t *testing.T) {
+		client := setupFixture()
+
+		actual, err := client.DeleteItem(ctx, testTableName)
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredKeyMsg), err)
+
+		actual, err = client.DeleteItem(ctx, testTableName,
+			deleteitem.WithKey(nil))
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredKeyMsg), err)
+	})
+	t.Run("it returns an error if the aws client returns an error", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*MockDynamoDB)
+
+		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
+
+		m.On("DeleteItemWithContext",
+			ctx, mock.Anything, mock.Anything).Return(nil, expectedErr)
+
+		actual, err := client.DeleteItem(ctx, testTableName,
+			deleteitem.WithKey(validKey))
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, expectedErr, err)
+	})
+	t.Run("it calls the aws client properly", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*MockDynamoDB)
+
+		m.On("DeleteItemWithContext",
+			ctx,
+			&dynamodb.DeleteItemInput{
+				Key:       validKey,
+				TableName: aws.String(testTableName),
+			},
+			mock.Anything).Return(&dynamodb.DeleteItemOutput{
+			Attributes: validKey,
+		}, nil)
+
+		actual, err := client.DeleteItem(ctx, testTableName,
+			deleteitem.WithKey(validKey))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, validKey, actual.Attributes)
+	})
+	t.Run("it sets all the parameters", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*MockDynamoDB)
+		filter := expression.Name(idFieldName).Equal(expression.Value(testID))
+		filter = expression.And(expression.Name(nameFieldName).Equal(expression.Value(testName)), filter)
+		expr, _ := expression.NewBuilder().WithFilter(filter).Build()
+
+		expectedInput := &dynamodb.DeleteItemInput{
+			Key:                         validKey,
+			TableName:                   aws.String(testTableName),
+			ReturnConsumedCapacity:      testReturnConsumedCapacity,
+			ReturnItemCollectionMetrics: testReturnItemCollectionMetrics,
+			ReturnValues:                testReturnValues,
+			ConditionExpression:         expr.Filter(),
+			ExpressionAttributeNames:    expr.Names(),
+			ExpressionAttributeValues:   expr.Values(),
+		}
+
+		m.On("DeleteItemWithContext",
+			ctx,
+			expectedInput,
+			mock.Anything).Return(&dynamodb.DeleteItemOutput{
+			Attributes: validKey,
+		}, nil)
+
+		actual, err := client.DeleteItem(ctx, testTableName,
+			deleteitem.WithKey(validKey),
+			deleteitem.WithReturnConsumedCapacity(testReturnConsumedCapacity),
+			deleteitem.WithReturnItemCollectionMetrics(testReturnItemCollectionMetrics),
+			deleteitem.WithReturnValues(testReturnValues),
+			deleteitem.WithConditionalExpression(&filter))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, validKey, actual.Attributes)
 	})
 }
 
