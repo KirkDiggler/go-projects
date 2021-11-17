@@ -20,8 +20,7 @@ will send the following as an input
 ```
 
 ## Supported Methods
-* BatchGetItemWith
-* DeleteItemWith
+* DeleteItem
 * DescribeGlobalTable
 * DescribeTable
 * GetItem
