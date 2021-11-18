@@ -182,6 +182,66 @@ func TestClient_DeleteItem(t *testing.T) {
 	})
 }
 
+func TestClient_DescribeTable(t *testing.T) {
+	ctx := context.Background()
+	testTableName := "test-table-name"
+
+	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
+		client := setupFixture()
+
+		actual, err := client.DescribeTable(ctx, "")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+
+		actual, err = client.DescribeTable(ctx, "to")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+	})
+	t.Run("it returns an error if the aws client returns an error", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*MockDynamoDB)
+
+		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
+
+		m.On("DescribeTableWithContext",
+			ctx, mock.Anything).Return(nil, expectedErr)
+
+		actual, err := client.DescribeTable(ctx, testTableName)
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, expectedErr, err)
+	})
+	t.Run("it calls the aws client properly", func(t *testing.T) {
+		client := setupFixture()
+
+		returnedTable := &dynamodb.TableDescription{
+			TableName: aws.String(testTableName),
+		}
+		m := client.awsClient.(*MockDynamoDB)
+
+		m.On("DescribeTableWithContext",
+			ctx,
+			&dynamodb.DescribeTableInput{
+				TableName: aws.String(testTableName),
+			}).Return(&dynamodb.DescribeTableOutput{
+			Table: returnedTable,
+		}, nil)
+
+		actual, err := client.DescribeTable(ctx, testTableName)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, returnedTable, actual.Table)
+
+		m.AssertExpectations(t)
+	})
+}
 func TestClient_PutItem(t *testing.T) {
 	ctx := context.Background()
 	testTableName := "test-table-name"

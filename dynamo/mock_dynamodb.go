@@ -34,3 +34,13 @@ func (m *MockDynamoDB) DeleteItemWithContext(ctx aws.Context, in *dynamodb.Delet
 
 	return args.Get(0).(*dynamodb.DeleteItemOutput), nil
 }
+
+func (m *MockDynamoDB) DescribeTableWithContext(ctx aws.Context, in *dynamodb.DescribeTableInput, opts ...request.Option) (*dynamodb.DescribeTableOutput, error) {
+	args := m.Called(ctx, in)
+
+	if args.Error(1) != nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*dynamodb.DescribeTableOutput), nil
+}
