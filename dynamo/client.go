@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/listtables"
+
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/getitem"
 
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/describetable"
@@ -152,6 +154,26 @@ func (c *Client) GetItem(ctx context.Context, tableName string, getOptions ...ge
 	return &getitem.Result{
 		Item:             result.Item,
 		ConsumedCapacity: result.ConsumedCapacity,
+	}, nil
+}
+
+// ListTables
+func (c *Client) ListTables(ctx context.Context, listTableOptions ...listtables.OptionFunc) (*listtables.Result, error) {
+	options := listtables.NewOptions(listTableOptions...)
+
+	dynamoInput := &dynamodb.ListTablesInput{
+		ExclusiveStartTableName: options.ExclusiveStartTableName,
+		Limit:                   options.Limit,
+	}
+
+	result, err := c.awsClient.ListTablesWithContext(ctx, dynamoInput)
+	if err != nil {
+		return nil, err
+	}
+
+	return &listtables.Result{
+		LastEvaluatedTableName: result.LastEvaluatedTableName,
+		TableNames:             result.TableNames,
 	}, nil
 }
 

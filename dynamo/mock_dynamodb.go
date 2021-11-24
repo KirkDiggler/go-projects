@@ -54,3 +54,13 @@ func (m *mockDynamoDB) DescribeTableWithContext(ctx aws.Context, in *dynamodb.De
 
 	return args.Get(0).(*dynamodb.DescribeTableOutput), nil
 }
+
+func (m *mockDynamoDB) ListTablesWithContext(ctx aws.Context, in *dynamodb.ListTablesInput, opts ...request.Option) (*dynamodb.ListTablesOutput, error) {
+	args := m.Called(ctx, in)
+
+	if args.Error(1) != nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*dynamodb.ListTablesOutput), nil
+}
