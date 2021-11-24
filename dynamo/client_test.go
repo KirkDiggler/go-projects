@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/listtables"
+
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/getitem"
 
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/deleteitem"
@@ -361,6 +363,54 @@ func TestClient_GetItem(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
 		assert.Equal(t, validKey, actual.Item)
+	})
+}
+
+func TestClient_ListTables(t *testing.T) {
+	ctx := context.Background()
+	testTableName := "test-table-name"
+
+	t.Run("it returns an error if the aws client returns an error", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
+
+		m.On("ListTablesWithContext",
+			ctx, mock.Anything).Return(nil, expectedErr)
+
+		actual, err := client.ListTables(ctx)
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, expectedErr, err)
+	})
+	t.Run("it calls the aws client properly", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		m.On("ListTablesWithContext",
+			ctx,
+			&dynamodb.ListTablesInput{
+				ExclusiveStartTableName: aws.String(testTableName),
+				Limit:                   aws.Int64(42),
+			}).Return(&dynamodb.ListTablesOutput{
+			TableNames: []*string{
+				aws.String(testTableName),
+			},
+		}, nil)
+
+		actual, err := client.ListTables(ctx,
+			listtables.WithExclusiveStartTableName(testTableName),
+			listtables.WithLimit(42))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, []*string{
+			aws.String(testTableName),
+		}, actual.TableNames)
 	})
 }
 
