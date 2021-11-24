@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/getitem"
+
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/describetable"
 
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/deleteitem"
@@ -110,6 +112,47 @@ func (c *Client) DescribeTable(ctx context.Context, tableName string) (*describe
 	}
 
 	return &describetable.Result{Table: result.Table}, nil
+}
+
+// GetItem
+func (c *Client) GetItem(ctx context.Context, tableName string, getOptions ...getitem.OptionFunc) (*getitem.Result, error) {
+	if len(tableName) < minLengthTableName {
+		return nil, errors.New(requiredTableNameMsg)
+	}
+
+	options := getitem.NewOptions(getOptions...)
+
+	if options.Key == nil {
+		return nil, errors.New(requiredKeyMsg)
+	}
+
+	dynamoInput := &dynamodb.GetItemInput{
+		Key:                    options.Key,
+		AttributesToGet:        options.AttributesToGet,
+		ConsistentRead:         options.ConsistentRead,
+		ReturnConsumedCapacity: options.ReturnConsumedCapacity,
+		TableName:              aws.String(tableName),
+	}
+
+	if options.ProjectionBuilder != nil {
+		expr, err := expression.NewBuilder().WithProjection(*options.ProjectionBuilder).Build()
+		if err != nil {
+			return nil, err
+		}
+
+		dynamoInput.ProjectionExpression = expr.Projection()
+		dynamoInput.ExpressionAttributeNames = expr.Names()
+	}
+
+	result, err := c.awsClient.GetItemWithContext(ctx, dynamoInput)
+	if err != nil {
+		return nil, err
+	}
+
+	return &getitem.Result{
+		Item:             result.Item,
+		ConsumedCapacity: result.ConsumedCapacity,
+	}, nil
 }
 
 // PutItem
