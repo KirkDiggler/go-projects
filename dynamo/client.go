@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/describetable"
+
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/deleteitem"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
@@ -90,6 +92,24 @@ func (c *Client) DeleteItem(ctx context.Context, tableName string, deleteOptions
 		ConsumedCapacity:      result.ConsumedCapacity,
 		ItemCollectionMetrics: result.ItemCollectionMetrics,
 	}, nil
+}
+
+// DescribeTable
+func (c *Client) DescribeTable(ctx context.Context, tableName string) (*describetable.Result, error) {
+	if len(tableName) < minLengthTableName {
+		return nil, errors.New(requiredTableNameMsg)
+	}
+
+	dynamoInput := &dynamodb.DescribeTableInput{
+		TableName: aws.String(tableName),
+	}
+
+	result, err := c.awsClient.DescribeTableWithContext(ctx, dynamoInput)
+	if err != nil {
+		return nil, err
+	}
+
+	return &describetable.Result{Table: result.Table}, nil
 }
 
 // PutItem

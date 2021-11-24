@@ -21,7 +21,6 @@ will send the following as an input
 
 ## Supported Methods
 * DeleteItem
-* DescribeGlobalTable
 * DescribeTable
 * GetItem
 * ListTables

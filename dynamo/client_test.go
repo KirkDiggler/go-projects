@@ -27,7 +27,7 @@ const (
 )
 
 func setupFixture() *Client {
-	return &Client{awsClient: &MockDynamoDB{}}
+	return &Client{awsClient: &mockDynamoDB{}}
 }
 
 func TestNewClient(t *testing.T) {
@@ -49,7 +49,7 @@ func TestNewClient(t *testing.T) {
 	})
 	t.Run("it returns a client", func(t *testing.T) {
 		actual, err := NewClient(&ClientConfig{
-			AWSClient: &MockDynamoDB{},
+			AWSClient: &mockDynamoDB{},
 		})
 
 		assert.Nil(t, err)
@@ -107,12 +107,12 @@ func TestClient_DeleteItem(t *testing.T) {
 	t.Run("it returns an error if the aws client returns an error", func(t *testing.T) {
 		client := setupFixture()
 
-		m := client.awsClient.(*MockDynamoDB)
+		m := client.awsClient.(*mockDynamoDB)
 
 		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
 
 		m.On("DeleteItemWithContext",
-			ctx, mock.Anything, mock.Anything).Return(nil, expectedErr)
+			ctx, mock.Anything).Return(nil, expectedErr)
 
 		actual, err := client.DeleteItem(ctx, testTableName,
 			deleteitem.WithKey(validKey))
@@ -124,15 +124,14 @@ func TestClient_DeleteItem(t *testing.T) {
 	t.Run("it calls the aws client properly", func(t *testing.T) {
 		client := setupFixture()
 
-		m := client.awsClient.(*MockDynamoDB)
+		m := client.awsClient.(*mockDynamoDB)
 
 		m.On("DeleteItemWithContext",
 			ctx,
 			&dynamodb.DeleteItemInput{
 				Key:       validKey,
 				TableName: aws.String(testTableName),
-			},
-			mock.Anything).Return(&dynamodb.DeleteItemOutput{
+			}).Return(&dynamodb.DeleteItemOutput{
 			Attributes: validKey,
 		}, nil)
 
@@ -146,7 +145,7 @@ func TestClient_DeleteItem(t *testing.T) {
 	t.Run("it sets all the parameters", func(t *testing.T) {
 		client := setupFixture()
 
-		m := client.awsClient.(*MockDynamoDB)
+		m := client.awsClient.(*mockDynamoDB)
 		filter := expression.Name(idFieldName).Equal(expression.Value(testID))
 		filter = expression.And(expression.Name(nameFieldName).Equal(expression.Value(testName)), filter)
 		expr, _ := expression.NewBuilder().WithFilter(filter).Build()
@@ -164,8 +163,7 @@ func TestClient_DeleteItem(t *testing.T) {
 
 		m.On("DeleteItemWithContext",
 			ctx,
-			expectedInput,
-			mock.Anything).Return(&dynamodb.DeleteItemOutput{
+			expectedInput).Return(&dynamodb.DeleteItemOutput{
 			Attributes: validKey,
 		}, nil)
 
@@ -179,6 +177,67 @@ func TestClient_DeleteItem(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
 		assert.Equal(t, validKey, actual.Attributes)
+	})
+}
+
+func TestClient_DescribeTable(t *testing.T) {
+	ctx := context.Background()
+	testTableName := "test-table-name"
+
+	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
+		client := setupFixture()
+
+		actual, err := client.DescribeTable(ctx, "")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+
+		actual, err = client.DescribeTable(ctx, "to")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+	})
+	t.Run("it returns an error if the aws client returns an error", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
+
+		m.On("DescribeTableWithContext",
+			ctx, mock.Anything).Return(nil, expectedErr)
+
+		actual, err := client.DescribeTable(ctx, testTableName)
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, expectedErr, err)
+	})
+	t.Run("it calls the aws client properly", func(t *testing.T) {
+		client := setupFixture()
+
+		returnedTable := &dynamodb.TableDescription{
+			TableName: aws.String(testTableName),
+		}
+		m := client.awsClient.(*mockDynamoDB)
+
+		m.On("DescribeTableWithContext",
+			ctx,
+			&dynamodb.DescribeTableInput{
+				TableName: aws.String(testTableName),
+			}).Return(&dynamodb.DescribeTableOutput{
+			Table: returnedTable,
+		}, nil)
+
+		actual, err := client.DescribeTable(ctx, testTableName)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, returnedTable, actual.Table)
+
+		m.AssertExpectations(t)
 	})
 }
 
@@ -231,12 +290,12 @@ func TestClient_PutItem(t *testing.T) {
 	t.Run("it returns an error if the aws client returns an error", func(t *testing.T) {
 		client := setupFixture()
 
-		m := client.awsClient.(*MockDynamoDB)
+		m := client.awsClient.(*mockDynamoDB)
 
 		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo Down"))
 
 		m.On("PutItemWithContext",
-			ctx, mock.Anything, mock.Anything).Return(nil, expectedErr)
+			ctx, mock.Anything).Return(nil, expectedErr)
 
 		actual, err := client.PutItem(ctx, testTableName,
 			putitem.WithItem(validItem))
@@ -248,15 +307,14 @@ func TestClient_PutItem(t *testing.T) {
 	t.Run("it calls the aws client properly", func(t *testing.T) {
 		client := setupFixture()
 
-		m := client.awsClient.(*MockDynamoDB)
+		m := client.awsClient.(*mockDynamoDB)
 
 		m.On("PutItemWithContext",
 			ctx,
 			&dynamodb.PutItemInput{
 				Item:      validItem,
 				TableName: aws.String(testTableName),
-			},
-			mock.Anything).Return(&dynamodb.PutItemOutput{
+			}).Return(&dynamodb.PutItemOutput{
 			Attributes: validItem,
 		}, nil)
 
@@ -270,7 +328,7 @@ func TestClient_PutItem(t *testing.T) {
 	t.Run("it sets all the parameters", func(t *testing.T) {
 		client := setupFixture()
 
-		m := client.awsClient.(*MockDynamoDB)
+		m := client.awsClient.(*mockDynamoDB)
 		filter := expression.Name(idFieldName).Equal(expression.Value(testID))
 		filter = expression.And(expression.Name(nameFieldName).Equal(expression.Value(testName)), filter)
 		expr, _ := expression.NewBuilder().WithFilter(filter).Build()
@@ -288,8 +346,7 @@ func TestClient_PutItem(t *testing.T) {
 
 		m.On("PutItemWithContext",
 			ctx,
-			expectedInput,
-			mock.Anything).Return(&dynamodb.PutItemOutput{
+			expectedInput).Return(&dynamodb.PutItemOutput{
 			Attributes: validItem,
 		}, nil)
 

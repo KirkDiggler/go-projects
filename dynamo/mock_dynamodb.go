@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type MockDynamoDB struct {
+type mockDynamoDB struct {
 	dynamodbiface.DynamoDBAPI
 	mock.Mock
 }
 
-func (m *MockDynamoDB) PutItemWithContext(ctx aws.Context, in *dynamodb.PutItemInput, opts ...request.Option) (*dynamodb.PutItemOutput, error) {
-	args := m.Called(ctx, in, opts)
+func (m *mockDynamoDB) PutItemWithContext(ctx aws.Context, in *dynamodb.PutItemInput, opts ...request.Option) (*dynamodb.PutItemOutput, error) {
+	args := m.Called(ctx, in)
 
 	if args.Error(1) != nil {
 		return nil, args.Error(1)
@@ -25,12 +25,22 @@ func (m *MockDynamoDB) PutItemWithContext(ctx aws.Context, in *dynamodb.PutItemI
 	return args.Get(0).(*dynamodb.PutItemOutput), nil
 }
 
-func (m *MockDynamoDB) DeleteItemWithContext(ctx aws.Context, in *dynamodb.DeleteItemInput, opts ...request.Option) (*dynamodb.DeleteItemOutput, error) {
-	args := m.Called(ctx, in, opts)
+func (m *mockDynamoDB) DeleteItemWithContext(ctx aws.Context, in *dynamodb.DeleteItemInput, opts ...request.Option) (*dynamodb.DeleteItemOutput, error) {
+	args := m.Called(ctx, in)
 
 	if args.Error(1) != nil {
 		return nil, args.Error(1)
 	}
 
 	return args.Get(0).(*dynamodb.DeleteItemOutput), nil
+}
+
+func (m *mockDynamoDB) DescribeTableWithContext(ctx aws.Context, in *dynamodb.DescribeTableInput, opts ...request.Option) (*dynamodb.DescribeTableOutput, error) {
+	args := m.Called(ctx, in)
+
+	if args.Error(1) != nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*dynamodb.DescribeTableOutput), nil
 }
