@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/getitem"
+
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/deleteitem"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
@@ -238,6 +240,127 @@ func TestClient_DescribeTable(t *testing.T) {
 		assert.Equal(t, returnedTable, actual.Table)
 
 		m.AssertExpectations(t)
+	})
+}
+
+func TestClient_GetItem(t *testing.T) {
+	ctx := context.Background()
+	testTableName := "test-table-name"
+
+	testID := "uuid1-uuid2-uuid3-uuid4"
+	testName := "my item"
+	testReturnConsumedCapacity := aws.String("TOTAL")
+	testProjectionField := "my_field"
+	testAttributesToGet := []*string{
+		aws.String(testProjectionField),
+	}
+	validKey := map[string]*dynamodb.AttributeValue{
+		idFieldName:   {S: aws.String(testID)},
+		nameFieldName: {S: aws.String(testName)},
+	}
+
+	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
+		client := setupFixture()
+
+		actual, err := client.GetItem(ctx, "")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+
+		actual, err = client.GetItem(ctx, "to")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+	})
+	t.Run("it requires a key to be set", func(t *testing.T) {
+		client := setupFixture()
+
+		actual, err := client.GetItem(ctx, testTableName)
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredKeyMsg), err)
+
+		actual, err = client.GetItem(ctx, testTableName,
+			getitem.WithKey(nil))
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredKeyMsg), err)
+	})
+	t.Run("it returns an error if the aws client returns an error", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
+
+		m.On("GetItemWithContext",
+			ctx, mock.Anything).Return(nil, expectedErr)
+
+		actual, err := client.GetItem(ctx, testTableName,
+			getitem.WithKey(validKey))
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, expectedErr, err)
+	})
+	t.Run("it calls the aws client properly", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		m.On("GetItemWithContext",
+			ctx,
+			&dynamodb.GetItemInput{
+				Key:       validKey,
+				TableName: aws.String(testTableName),
+			}).Return(&dynamodb.GetItemOutput{
+			Item: validKey,
+		}, nil)
+
+		actual, err := client.GetItem(ctx, testTableName,
+			getitem.WithKey(validKey))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, validKey, actual.Item)
+	})
+	t.Run("it sets all the parameters", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+		proj := expression.NamesList(expression.Name(nameFieldName), expression.Name(idFieldName))
+		expr, _ := expression.NewBuilder().WithProjection(proj).Build()
+
+		expectedInput := &dynamodb.GetItemInput{
+			AttributesToGet:          testAttributesToGet,
+			Key:                      validKey,
+			TableName:                aws.String(testTableName),
+			ReturnConsumedCapacity:   testReturnConsumedCapacity,
+			ProjectionExpression:     expr.Projection(),
+			ExpressionAttributeNames: expr.Names(),
+			ConsistentRead:           aws.Bool(true),
+		}
+
+		m.On("GetItemWithContext",
+			ctx,
+			expectedInput).Return(&dynamodb.GetItemOutput{
+			Item: validKey,
+		}, nil)
+
+		actual, err := client.GetItem(ctx, testTableName,
+			getitem.WithAttributesToGet(testAttributesToGet),
+			getitem.WithConsistentRead(aws.Bool(true)),
+			getitem.WithKey(validKey),
+			getitem.WithReturnConsumedCapacity(testReturnConsumedCapacity),
+			getitem.WithConditionalExpression(&proj))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, validKey, actual.Item)
 	})
 }
 
