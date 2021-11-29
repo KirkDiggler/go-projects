@@ -27,4 +27,3 @@ will send the following as an input
 * PutItem
 * Query
 * Scan
-* UpdateItem
