@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/scan"
+
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/query"
 
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/listtables"
@@ -278,4 +280,74 @@ func (c *Client) Query(ctx context.Context, tableName string, queryOptions ...qu
 		LastEvaluatedKey: result.LastEvaluatedKey,
 		ScannedCount:     result.ScannedCount,
 	}, nil
+}
+
+// Query
+func (c *Client) Scan(ctx context.Context, tableName string, scanOptions ...scan.OptionFunc) (*scan.Result, error) {
+	if len(tableName) < minLengthTableName {
+		return nil, errors.New(requiredTableNameMsg)
+	}
+
+	options := scan.NewOptions(scanOptions...)
+
+	dynamoInput := &dynamodb.ScanInput{
+		ConsistentRead:         options.ConsistentRead,
+		ExclusiveStartKey:      options.ExclusiveStartKey,
+		IndexName:              options.IndexName,
+		Limit:                  options.Limit,
+		ReturnConsumedCapacity: options.ReturnConsumedCapacity,
+		Select:                 options.Select,
+		TableName:              aws.String(tableName),
+	}
+
+	if options.ProjectionBuilder != nil || options.FilterConditionBuilder != nil {
+		expr, err := buildExpression(options.FilterConditionBuilder, options.ProjectionBuilder)
+		if err != nil {
+			return nil, err
+		}
+
+		dynamoInput.ExpressionAttributeNames = expr.Names()
+		dynamoInput.ExpressionAttributeValues = expr.Values()
+
+		if expr.Filter() != nil {
+			dynamoInput.FilterExpression = expr.Filter()
+		}
+
+		if expr.Projection() != nil {
+			dynamoInput.ProjectionExpression = expr.Projection()
+		}
+	}
+
+	result, err := c.awsClient.ScanWithContext(ctx, dynamoInput)
+	if err != nil {
+		return nil, err
+	}
+
+	return &scan.Result{
+		ConsumedCapacity: result.ConsumedCapacity,
+		Count:            result.Count,
+		Items:            result.Items,
+		LastEvaluatedKey: result.LastEvaluatedKey,
+		ScannedCount:     result.ScannedCount,
+	}, nil
+}
+
+func buildExpression(filter *expression.ConditionBuilder, proj *expression.ProjectionBuilder) (expression.Expression, error) {
+	if filter == nil && proj == nil {
+		return expression.NewBuilder().Build()
+	}
+
+	if filter != nil && proj != nil {
+		return expression.NewBuilder().WithFilter(*filter).WithProjection(*proj).Build()
+	}
+
+	if proj != nil {
+		return expression.NewBuilder().WithProjection(*proj).Build()
+	}
+
+	if filter != nil {
+		return expression.NewBuilder().WithFilter(*filter).Build()
+	}
+
+	return expression.NewBuilder().Build()
 }

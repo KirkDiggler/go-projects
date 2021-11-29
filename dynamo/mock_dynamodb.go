@@ -74,3 +74,13 @@ func (m *mockDynamoDB) QueryWithContext(ctx aws.Context, in *dynamodb.QueryInput
 
 	return args.Get(0).(*dynamodb.QueryOutput), nil
 }
+
+func (m *mockDynamoDB) ScanWithContext(ctx aws.Context, in *dynamodb.ScanInput, opts ...request.Option) (*dynamodb.ScanOutput, error) {
+	args := m.Called(ctx, in)
+
+	if args.Error(1) != nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*dynamodb.ScanOutput), nil
+}

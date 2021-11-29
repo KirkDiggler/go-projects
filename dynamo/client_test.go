@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/scan"
+
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/query"
 
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/listtables"
@@ -683,6 +685,129 @@ func TestClient_Query(t *testing.T) {
 			query.WithReturnConsumedCapacity(testReturnConsumedCapacity),
 			query.WithScanIndexForward(testScanIndexForward),
 			query.WithSelect(testSelect))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+
+	})
+
+}
+
+func TestClient_Scan(t *testing.T) {
+	ctx := context.Background()
+	testTableName := "test-table-name"
+
+	testID := "uuid1-uuid2-uuid3-uuid4"
+	testName := "my item"
+	testReturnConsumedCapacity := aws.String("TOTAL")
+
+	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
+		client := setupFixture()
+
+		actual, err := client.Scan(ctx, "")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+
+		actual, err = client.Scan(ctx, "to")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+	})
+	t.Run("it returns an error if the aws client returns an error", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		expectedErr := awserr.New("500", "dynamo down", errors.New("dynamo down"))
+
+		m.On("ScanWithContext",
+			ctx, mock.Anything).Return(nil, expectedErr)
+
+		actual, err := client.Scan(ctx, testTableName)
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, expectedErr, err)
+	})
+	t.Run("it calls the aws client properly", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		returnedItems := []map[string]*dynamodb.AttributeValue{{
+			idFieldName:   {S: aws.String(testID)},
+			nameFieldName: {S: aws.String(testName)},
+		}}
+
+		m.On("ScanWithContext",
+			ctx,
+			&dynamodb.ScanInput{
+				TableName: aws.String(testTableName),
+			}).Return(&dynamodb.ScanOutput{
+			Items: returnedItems,
+		}, nil)
+
+		actual, err := client.Scan(ctx, testTableName)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, returnedItems, actual.Items)
+	})
+	t.Run("it sets all the parameters", func(t *testing.T) {
+		client := setupFixture()
+
+		testSelect := "COUNT"
+		testIndexName := "GSI1"
+		var testLimit int64 = 42
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		proj := expression.NamesList(expression.Name(nameFieldName), expression.Name(idFieldName))
+		filter := expression.Name(nameFieldName).Equal(expression.Value(testName))
+
+		expr, _ := expression.NewBuilder().WithFilter(filter).WithProjection(proj).Build()
+
+		exclusiveStartKey := map[string]*dynamodb.AttributeValue{
+			idFieldName: {S: aws.String(testID)},
+		}
+
+		expectedInput := &dynamodb.ScanInput{
+			ConsistentRead:            aws.Bool(true),
+			ExclusiveStartKey:         exclusiveStartKey,
+			ExpressionAttributeNames:  expr.Names(),
+			ExpressionAttributeValues: expr.Values(),
+			FilterExpression:          expr.Filter(),
+			IndexName:                 &testIndexName,
+			Limit:                     &testLimit,
+			ReturnConsumedCapacity:    testReturnConsumedCapacity,
+			ProjectionExpression:      expr.Projection(),
+			Select:                    aws.String(testSelect),
+			TableName:                 aws.String(testTableName),
+		}
+
+		returnedItems := []map[string]*dynamodb.AttributeValue{{
+			idFieldName:   {S: aws.String(testID)},
+			nameFieldName: {S: aws.String(testName)},
+		}}
+
+		m.On("ScanWithContext",
+			ctx,
+			expectedInput).Return(&dynamodb.ScanOutput{
+			Items: returnedItems,
+		}, nil)
+
+		actual, err := client.Scan(ctx, testTableName,
+			scan.WithConsistentRead(aws.Bool(true)),
+			scan.WithExclusiveStartKey(exclusiveStartKey),
+			scan.WithFilterConditionBuilder(&filter),
+			scan.WithIndexName(testIndexName),
+			scan.WithLimit(testLimit),
+			scan.WithProjectionBuilder(&proj),
+			scan.WithReturnConsumedCapacity(testReturnConsumedCapacity),
+			scan.WithSelect(testSelect))
 
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
