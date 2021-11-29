@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/query"
+
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/listtables"
 
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/getitem"
@@ -534,4 +536,157 @@ func TestClient_PutItem(t *testing.T) {
 		assert.NotNil(t, actual)
 		assert.Equal(t, validItem, actual.Attributes)
 	})
+}
+
+func TestClient_Query(t *testing.T) {
+	ctx := context.Background()
+	testTableName := "test-table-name"
+
+	testID := "uuid1-uuid2-uuid3-uuid4"
+	testName := "my item"
+	testReturnConsumedCapacity := aws.String("TOTAL")
+
+	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
+		client := setupFixture()
+
+		actual, err := client.Query(ctx, "")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+
+		actual, err = client.Query(ctx, "to")
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredTableNameMsg), err)
+	})
+	t.Run("it requires a key to be set", func(t *testing.T) {
+		client := setupFixture()
+
+		actual, err := client.Query(ctx, testTableName)
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredKeyConditionBuilderMsg), err)
+
+		actual, err = client.Query(ctx, testTableName,
+			query.WithKeyConditionBuilder(nil))
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, errors.New(requiredKeyConditionBuilderMsg), err)
+	})
+	t.Run("it returns an error if the aws client returns an error", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
+
+		m.On("QueryWithContext",
+			ctx, mock.Anything).Return(nil, expectedErr)
+		keyBuilder := expression.Key(idFieldName).Equal(expression.Value(testID))
+
+		actual, err := client.Query(ctx, testTableName,
+			query.WithKeyConditionBuilder(&keyBuilder))
+
+		assert.Nil(t, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, expectedErr, err)
+	})
+	t.Run("it calls the aws client properly", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		returnedItems := []map[string]*dynamodb.AttributeValue{{
+			idFieldName:   {S: aws.String(testID)},
+			nameFieldName: {S: aws.String(testName)},
+		}}
+		keyBuilder := expression.Key(idFieldName).Equal(expression.Value(testID))
+
+		expr, _ := expression.NewBuilder().WithKeyCondition(keyBuilder).Build()
+
+		m.On("QueryWithContext",
+			ctx,
+			&dynamodb.QueryInput{
+				KeyConditionExpression:    expr.KeyCondition(),
+				ExpressionAttributeNames:  expr.Names(),
+				ExpressionAttributeValues: expr.Values(),
+				TableName:                 aws.String(testTableName),
+			}).Return(&dynamodb.QueryOutput{
+			Items: returnedItems,
+		}, nil)
+
+		actual, err := client.Query(ctx, testTableName,
+			query.WithKeyConditionBuilder(&keyBuilder))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, returnedItems, actual.Items)
+	})
+	t.Run("it sets all the parameters", func(t *testing.T) {
+		client := setupFixture()
+
+		testScanIndexForward := true
+		testSelect := "COUNT"
+		testIndexName := "GSI1"
+		var testLimit int64 = 42
+
+		m := client.awsClient.(*mockDynamoDB)
+		proj := expression.NamesList(expression.Name(nameFieldName), expression.Name(idFieldName))
+		key := expression.Key(idFieldName).Equal(expression.Value(testID))
+		filter := expression.Name(nameFieldName).Equal(expression.Value(testName))
+
+		expr, _ := expression.NewBuilder().WithKeyCondition(key).WithFilter(filter).WithProjection(proj).Build()
+
+		exclusiveStartKey := map[string]*dynamodb.AttributeValue{
+			idFieldName: {S: aws.String(testID)},
+		}
+
+		expectedInput := &dynamodb.QueryInput{
+			ConsistentRead:            aws.Bool(true),
+			ExclusiveStartKey:         exclusiveStartKey,
+			ExpressionAttributeNames:  expr.Names(),
+			ExpressionAttributeValues: expr.Values(),
+			FilterExpression:          expr.Filter(),
+			IndexName:                 &testIndexName,
+			KeyConditionExpression:    expr.KeyCondition(),
+			Limit:                     &testLimit,
+			ReturnConsumedCapacity:    testReturnConsumedCapacity,
+			ProjectionExpression:      expr.Projection(),
+			ScanIndexForward:          aws.Bool(testScanIndexForward),
+			Select:                    aws.String(testSelect),
+			TableName:                 aws.String(testTableName),
+		}
+
+		returnedItems := []map[string]*dynamodb.AttributeValue{{
+			idFieldName:   {S: aws.String(testID)},
+			nameFieldName: {S: aws.String(testName)},
+		}}
+
+		m.On("QueryWithContext",
+			ctx,
+			expectedInput).Return(&dynamodb.QueryOutput{
+			Items: returnedItems,
+		}, nil)
+
+		actual, err := client.Query(ctx, testTableName,
+			query.WithConsistentRead(aws.Bool(true)),
+			query.WithExclusiveStartKey(exclusiveStartKey),
+			query.WithFilterConditionBuilder(&filter),
+			query.WithIndexName(testIndexName),
+			query.WithKeyConditionBuilder(&key),
+			query.WithLimit(testLimit),
+			query.WithProjectionBuilder(&proj),
+			query.WithReturnConsumedCapacity(testReturnConsumedCapacity),
+			query.WithScanIndexForward(testScanIndexForward),
+			query.WithSelect(testSelect))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+
+	})
+
 }
