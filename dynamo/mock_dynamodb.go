@@ -64,3 +64,13 @@ func (m *mockDynamoDB) ListTablesWithContext(ctx aws.Context, in *dynamodb.ListT
 
 	return args.Get(0).(*dynamodb.ListTablesOutput), nil
 }
+
+func (m *mockDynamoDB) QueryWithContext(ctx aws.Context, in *dynamodb.QueryInput, opts ...request.Option) (*dynamodb.QueryOutput, error) {
+	args := m.Called(ctx, in)
+
+	if args.Error(1) != nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*dynamodb.QueryOutput), nil
+}

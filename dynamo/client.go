@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/query"
+
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/listtables"
 
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/getitem"
@@ -26,12 +28,13 @@ const (
 	minLengthTableName = 3
 
 	requiredCfgMsg       = "cfg is required"
-	requiredAWSClientMsg = "AWSClient is required"
+	requiredAWSClientMsg = "the field  AWSClient is required"
 
 	requiredTableNameMsg = "tableName is a required parameter"
-	requiredItemMsg      = "item is required"
+	requiredItemMsg      = "the field  Item is required"
 
-	requiredKeyMsg = "key is required"
+	requiredKeyMsg                 = "the field Key is required"
+	requiredKeyConditionBuilderMsg = "the field KeyConditionBuilder is required"
 )
 
 type Client struct {
@@ -217,5 +220,62 @@ func (c *Client) PutItem(ctx context.Context, tableName string, putOptions ...pu
 		Attributes:            result.Attributes,
 		ConsumedCapacity:      result.ConsumedCapacity,
 		ItemCollectionMetrics: result.ItemCollectionMetrics,
+	}, nil
+}
+
+// Query
+func (c *Client) Query(ctx context.Context, tableName string, queryOptions ...query.OptionFunc) (*query.Result, error) {
+	if len(tableName) < minLengthTableName {
+		return nil, errors.New(requiredTableNameMsg)
+	}
+
+	options := query.NewOptions(queryOptions...)
+
+	if options.KeyConditionBuilder == nil {
+		return nil, errors.New(requiredKeyConditionBuilderMsg)
+	}
+
+	builder := expression.NewBuilder().WithKeyCondition(*options.KeyConditionBuilder)
+
+	if options.ProjectionBuilder != nil {
+		builder.WithProjection(*options.ProjectionBuilder)
+	}
+
+	if options.FilterConditionBuilder != nil {
+		builder.WithFilter(*options.FilterConditionBuilder)
+	}
+
+	expr, err := builder.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	dynamoInput := &dynamodb.QueryInput{
+		ConsistentRead:            options.ConsistentRead,
+		ExclusiveStartKey:         options.ExclusiveStartKey,
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
+		KeyConditionExpression:    expr.KeyCondition(),
+		IndexName:                 options.IndexName,
+		Limit:                     options.Limit,
+		ProjectionExpression:      expr.Projection(),
+		ReturnConsumedCapacity:    options.ReturnConsumedCapacity,
+		ScanIndexForward:          options.ScanIndexForward,
+		Select:                    options.Select,
+		TableName:                 aws.String(tableName),
+	}
+
+	result, err := c.awsClient.QueryWithContext(ctx, dynamoInput)
+	if err != nil {
+		return nil, err
+	}
+
+	return &query.Result{
+		ConsumedCapacity: result.ConsumedCapacity,
+		Count:            result.Count,
+		Items:            result.Items,
+		LastEvaluatedKey: result.LastEvaluatedKey,
+		ScannedCount:     result.ScannedCount,
 	}, nil
 }
