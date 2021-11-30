@@ -80,8 +80,8 @@ func (c *Client) DeleteItem(ctx context.Context, tableName string, deleteOptions
 		TableName:                   aws.String(tableName),
 	}
 
-	if options.ConditionalExpression != nil {
-		expr, err := expression.NewBuilder().WithFilter(*options.ConditionalExpression).Build()
+	if options.FilterConditionBuilder != nil {
+		expr, err := expression.NewBuilder().WithFilter(*options.FilterConditionBuilder).Build()
 		if err != nil {
 			return nil, err
 		}
@@ -202,8 +202,8 @@ func (c *Client) PutItem(ctx context.Context, tableName string, putOptions ...pu
 		Item:                        options.Item,
 	}
 
-	if options.ConditionalExpression != nil {
-		expr, err := expression.NewBuilder().WithFilter(*options.ConditionalExpression).Build()
+	if options.FilterConditionBuilder != nil {
+		expr, err := expression.NewBuilder().WithFilter(*options.FilterConditionBuilder).Build()
 		if err != nil {
 			return nil, err
 		}

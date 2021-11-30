@@ -6,12 +6,12 @@ import (
 )
 
 type Options struct {
-	// input = expression.NewBuilder().WithFilter(ConditionalExpression)
+	// input = expression.NewBuilder().WithFilter(FilterConditionBuilder)
 	//
 	// ConditionExpression = input.Filter()
 	// ExpressionAttributeNames = input.Names()
 	// ExpressionAttributeValues = input.Values()
-	ConditionalExpression *expression.ConditionBuilder
+	FilterConditionBuilder *expression.ConditionBuilder
 
 	// maps to DeleteItemInput.Key
 	//
@@ -46,9 +46,9 @@ func WithKey(input map[string]*dynamodb.AttributeValue) OptionFunc {
 	}
 }
 
-func WithConditionalExpression(input *expression.ConditionBuilder) OptionFunc {
+func WithFilterConditionBuilder(input *expression.ConditionBuilder) OptionFunc {
 	return func(options *Options) {
-		options.ConditionalExpression = input
+		options.FilterConditionBuilder = input
 	}
 }
 

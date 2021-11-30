@@ -180,7 +180,7 @@ func TestClient_DeleteItem(t *testing.T) {
 			deleteitem.WithReturnConsumedCapacity(testReturnConsumedCapacity),
 			deleteitem.WithReturnItemCollectionMetrics(testReturnItemCollectionMetrics),
 			deleteitem.WithReturnValues(testReturnValues),
-			deleteitem.WithConditionalExpression(&filter))
+			deleteitem.WithFilterConditionBuilder(&filter))
 
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
@@ -532,7 +532,7 @@ func TestClient_PutItem(t *testing.T) {
 			putitem.WithReturnConsumedCapacity(testReturnConsumedCapacity),
 			putitem.WithReturnItemCollectionMetrics(testReturnItemCollectionMetrics),
 			putitem.WithReturnValues(testReturnValues),
-			putitem.WithConditionalExpression(&filter))
+			putitem.WithFilterConditionBuilder(&filter))
 
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
