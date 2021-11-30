@@ -1,7 +1,6 @@
 package scan
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 )
@@ -14,7 +13,9 @@ type Options struct {
 	Limit                  *int64
 	ProjectionBuilder      *expression.ProjectionBuilder
 	ReturnConsumedCapacity *string
+	Segment                *int64
 	Select                 *string
+	TotalSegments          *int64
 }
 
 type OptionFunc func(*Options)
@@ -49,13 +50,13 @@ func WithFilterConditionBuilder(input *expression.ConditionBuilder) OptionFunc {
 
 func WithIndexName(input string) OptionFunc {
 	return func(options *Options) {
-		options.IndexName = aws.String(input)
+		options.IndexName = &input
 	}
 }
 
 func WithLimit(input int64) OptionFunc {
 	return func(options *Options) {
-		options.Limit = aws.Int64(input)
+		options.Limit = &input
 	}
 }
 
@@ -71,8 +72,20 @@ func WithReturnConsumedCapacity(input *string) OptionFunc {
 	}
 }
 
+func WithSegment(input int64) OptionFunc {
+	return func(options *Options) {
+		options.Segment = &input
+	}
+}
+
 func WithSelect(input string) OptionFunc {
 	return func(options *Options) {
-		options.Select = aws.String(input)
+		options.Select = &input
+	}
+}
+
+func WithTotalSegments(input int64) OptionFunc {
+	return func(options *Options) {
+		options.TotalSegments = &input
 	}
 }

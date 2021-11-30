@@ -282,7 +282,7 @@ func (c *Client) Query(ctx context.Context, tableName string, queryOptions ...qu
 	}, nil
 }
 
-// Query
+// Scan
 func (c *Client) Scan(ctx context.Context, tableName string, scanOptions ...scan.OptionFunc) (*scan.Result, error) {
 	if len(tableName) < minLengthTableName {
 		return nil, errors.New(requiredTableNameMsg)
@@ -296,8 +296,10 @@ func (c *Client) Scan(ctx context.Context, tableName string, scanOptions ...scan
 		IndexName:              options.IndexName,
 		Limit:                  options.Limit,
 		ReturnConsumedCapacity: options.ReturnConsumedCapacity,
+		Segment:                options.Segment,
 		Select:                 options.Select,
 		TableName:              aws.String(tableName),
+		TotalSegments:          options.TotalSegments,
 	}
 
 	if options.ProjectionBuilder != nil || options.FilterConditionBuilder != nil {

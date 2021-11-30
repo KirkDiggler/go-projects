@@ -761,6 +761,8 @@ func TestClient_Scan(t *testing.T) {
 
 		testSelect := "COUNT"
 		testIndexName := "GSI1"
+		var testSegment int64 = 2
+		var testTotalSegments int64 = 42
 		var testLimit int64 = 42
 
 		m := client.awsClient.(*mockDynamoDB)
@@ -784,8 +786,10 @@ func TestClient_Scan(t *testing.T) {
 			Limit:                     &testLimit,
 			ReturnConsumedCapacity:    testReturnConsumedCapacity,
 			ProjectionExpression:      expr.Projection(),
+			Segment:                   &testSegment,
 			Select:                    aws.String(testSelect),
 			TableName:                 aws.String(testTableName),
+			TotalSegments:             &testTotalSegments,
 		}
 
 		returnedItems := []map[string]*dynamodb.AttributeValue{{
@@ -807,7 +811,9 @@ func TestClient_Scan(t *testing.T) {
 			scan.WithLimit(testLimit),
 			scan.WithProjectionBuilder(&proj),
 			scan.WithReturnConsumedCapacity(testReturnConsumedCapacity),
-			scan.WithSelect(testSelect))
+			scan.WithSelect(testSelect),
+			scan.WithSegment(testSegment),
+			scan.WithTotalSegments(testTotalSegments))
 
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
