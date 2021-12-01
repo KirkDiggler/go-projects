@@ -1,10 +1,10 @@
 package listtables
 
-import "github.com/aws/aws-sdk-go/aws"
+import "github.com/aws/aws-sdk-go-v2/aws"
 
 type Options struct {
 	ExclusiveStartTableName *string
-	Limit                   *int64
+	Limit                   *int32
 }
 
 type OptionFunc func(*Options)
@@ -27,10 +27,10 @@ func WithExclusiveStartTableName(input string) OptionFunc {
 	}
 }
 
-func WithLimit(input int64) OptionFunc {
+func WithLimit(input int32) OptionFunc {
 	return func(options *Options) {
 		if input != 0 {
-			options.Limit = aws.Int64(input)
+			options.Limit = aws.Int32(input)
 		}
 	}
 }

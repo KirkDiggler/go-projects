@@ -16,14 +16,11 @@ import (
 
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/deleteitem"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/putitem"
-
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 )
 
 const (
@@ -40,11 +37,11 @@ const (
 )
 
 type Client struct {
-	awsClient dynamodbiface.DynamoDBAPI
+	awsClient DynamoAPI
 }
 
 type ClientConfig struct {
-	AWSClient dynamodbiface.DynamoDBAPI
+	AWSClient DynamoAPI
 }
 
 func NewClient(cfg *ClientConfig) (*Client, error) {
@@ -76,7 +73,7 @@ func (c *Client) DeleteItem(ctx context.Context, tableName string, deleteOptions
 		Key:                         options.Key,
 		ReturnConsumedCapacity:      options.ReturnConsumedCapacity,
 		ReturnItemCollectionMetrics: options.ReturnItemCollectionMetrics,
-		ReturnValues:                options.ReturnValues,
+		ReturnValues:                options.ReturnValue,
 		TableName:                   aws.String(tableName),
 	}
 
@@ -91,7 +88,7 @@ func (c *Client) DeleteItem(ctx context.Context, tableName string, deleteOptions
 		dynamoInput.ExpressionAttributeValues = expr.Values()
 	}
 
-	result, err := c.awsClient.DeleteItemWithContext(ctx, dynamoInput)
+	result, err := c.awsClient.DeleteItem(ctx, dynamoInput)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +110,7 @@ func (c *Client) DescribeTable(ctx context.Context, tableName string) (*describe
 		TableName: aws.String(tableName),
 	}
 
-	result, err := c.awsClient.DescribeTableWithContext(ctx, dynamoInput)
+	result, err := c.awsClient.DescribeTable(ctx, dynamoInput)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +132,6 @@ func (c *Client) GetItem(ctx context.Context, tableName string, getOptions ...ge
 
 	dynamoInput := &dynamodb.GetItemInput{
 		Key:                    options.Key,
-		AttributesToGet:        options.AttributesToGet,
 		ConsistentRead:         options.ConsistentRead,
 		ReturnConsumedCapacity: options.ReturnConsumedCapacity,
 		TableName:              aws.String(tableName),
@@ -151,7 +147,7 @@ func (c *Client) GetItem(ctx context.Context, tableName string, getOptions ...ge
 		dynamoInput.ExpressionAttributeNames = expr.Names()
 	}
 
-	result, err := c.awsClient.GetItemWithContext(ctx, dynamoInput)
+	result, err := c.awsClient.GetItem(ctx, dynamoInput)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +167,7 @@ func (c *Client) ListTables(ctx context.Context, listTableOptions ...listtables.
 		Limit:                   options.Limit,
 	}
 
-	result, err := c.awsClient.ListTablesWithContext(ctx, dynamoInput)
+	result, err := c.awsClient.ListTables(ctx, dynamoInput)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +194,7 @@ func (c *Client) PutItem(ctx context.Context, tableName string, putOptions ...pu
 		TableName:                   aws.String(tableName),
 		ReturnConsumedCapacity:      options.ReturnConsumedCapacity,
 		ReturnItemCollectionMetrics: options.ReturnItemCollectionMetrics,
-		ReturnValues:                options.ReturnValues,
+		ReturnValues:                options.ReturnValue,
 		Item:                        options.Item,
 	}
 
@@ -213,7 +209,7 @@ func (c *Client) PutItem(ctx context.Context, tableName string, putOptions ...pu
 		dynamoInput.ExpressionAttributeValues = expr.Values()
 	}
 
-	result, err := c.awsClient.PutItemWithContext(ctx, dynamoInput)
+	result, err := c.awsClient.PutItem(ctx, dynamoInput)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +264,7 @@ func (c *Client) Query(ctx context.Context, tableName string, queryOptions ...qu
 		TableName:                 aws.String(tableName),
 	}
 
-	result, err := c.awsClient.QueryWithContext(ctx, dynamoInput)
+	result, err := c.awsClient.Query(ctx, dynamoInput)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +316,7 @@ func (c *Client) Scan(ctx context.Context, tableName string, scanOptions ...scan
 		}
 	}
 
-	result, err := c.awsClient.ScanWithContext(ctx, dynamoInput)
+	result, err := c.awsClient.Scan(ctx, dynamoInput)
 	if err != nil {
 		return nil, err
 	}

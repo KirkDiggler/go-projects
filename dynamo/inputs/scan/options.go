@@ -1,21 +1,21 @@
 package scan
 
 import (
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 type Options struct {
 	ConsistentRead         *bool
-	ExclusiveStartKey      map[string]*dynamodb.AttributeValue
+	ExclusiveStartKey      map[string]types.AttributeValue
 	FilterConditionBuilder *expression.ConditionBuilder
 	IndexName              *string
-	Limit                  *int64
+	Limit                  *int32
 	ProjectionBuilder      *expression.ProjectionBuilder
-	ReturnConsumedCapacity *string
-	Segment                *int64
-	Select                 *string
-	TotalSegments          *int64
+	ReturnConsumedCapacity types.ReturnConsumedCapacity
+	Segment                *int32
+	Select                 types.Select
+	TotalSegments          *int32
 }
 
 type OptionFunc func(*Options)
@@ -36,7 +36,7 @@ func WithConsistentRead(input *bool) OptionFunc {
 	}
 }
 
-func WithExclusiveStartKey(input map[string]*dynamodb.AttributeValue) OptionFunc {
+func WithExclusiveStartKey(input map[string]types.AttributeValue) OptionFunc {
 	return func(options *Options) {
 		options.ExclusiveStartKey = input
 	}
@@ -54,7 +54,7 @@ func WithIndexName(input string) OptionFunc {
 	}
 }
 
-func WithLimit(input int64) OptionFunc {
+func WithLimit(input int32) OptionFunc {
 	return func(options *Options) {
 		options.Limit = &input
 	}
@@ -66,25 +66,25 @@ func WithProjectionBuilder(input *expression.ProjectionBuilder) OptionFunc {
 	}
 }
 
-func WithReturnConsumedCapacity(input *string) OptionFunc {
+func WithReturnConsumedCapacity(input types.ReturnConsumedCapacity) OptionFunc {
 	return func(options *Options) {
 		options.ReturnConsumedCapacity = input
 	}
 }
 
-func WithSegment(input int64) OptionFunc {
+func WithSegment(input int32) OptionFunc {
 	return func(options *Options) {
 		options.Segment = &input
 	}
 }
 
-func WithSelect(input string) OptionFunc {
+func WithSelect(input types.Select) OptionFunc {
 	return func(options *Options) {
-		options.Select = &input
+		options.Select = input
 	}
 }
 
-func WithTotalSegments(input int64) OptionFunc {
+func WithTotalSegments(input int32) OptionFunc {
 	return func(options *Options) {
 		options.TotalSegments = &input
 	}

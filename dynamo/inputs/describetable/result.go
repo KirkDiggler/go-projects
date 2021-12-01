@@ -1,7 +1,9 @@
 package describetable
 
-import "github.com/aws/aws-sdk-go/service/dynamodb"
+import (
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+)
 
 type Result struct {
-	Table *dynamodb.TableDescription
+	Table *types.TableDescription
 }

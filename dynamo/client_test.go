@@ -5,26 +5,18 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/deleteitem"
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/getitem"
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/listtables"
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/putitem"
+	"github.com/KirkDiggler/go-projects/dynamo/inputs/query"
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/scan"
 
-	"github.com/KirkDiggler/go-projects/dynamo/inputs/query"
-
-	"github.com/KirkDiggler/go-projects/dynamo/inputs/listtables"
-
-	"github.com/KirkDiggler/go-projects/dynamo/inputs/getitem"
-
-	"github.com/KirkDiggler/go-projects/dynamo/inputs/deleteitem"
-
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-
-	"github.com/aws/aws-sdk-go/aws/awserr"
-
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/stretchr/testify/mock"
-
-	"github.com/KirkDiggler/go-projects/dynamo/inputs/putitem"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -72,13 +64,13 @@ func TestClient_DeleteItem(t *testing.T) {
 
 	testID := "uuid1-uuid2-uuid3-uuid4"
 	testName := "my item"
-	testReturnConsumedCapacity := aws.String("TOTAL")
-	testReturnItemCollectionMetrics := aws.String("SIZE")
-	testReturnValues := aws.String("ALL_OLD")
+	testReturnConsumedCapacity := types.ReturnConsumedCapacityTotal
+	testReturnItemCollectionMetrics := types.ReturnItemCollectionMetricsNone
+	testReturnValues := types.ReturnValueAllOld
 
-	validKey := map[string]*dynamodb.AttributeValue{
-		idFieldName:   {S: aws.String(testID)},
-		nameFieldName: {S: aws.String(testName)},
+	validKey := map[string]types.AttributeValue{
+		idFieldName:   &types.AttributeValueMemberS{Value: testID},
+		nameFieldName: &types.AttributeValueMemberS{Value: testName},
 	}
 
 	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
@@ -117,7 +109,9 @@ func TestClient_DeleteItem(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
+		expectedErr := types.InternalServerError{
+			Message: aws.String("dynamo down"),
+		}
 
 		m.On("DeleteItemWithContext",
 			ctx, mock.Anything).Return(nil, expectedErr)
@@ -179,7 +173,7 @@ func TestClient_DeleteItem(t *testing.T) {
 			deleteitem.WithKey(validKey),
 			deleteitem.WithReturnConsumedCapacity(testReturnConsumedCapacity),
 			deleteitem.WithReturnItemCollectionMetrics(testReturnItemCollectionMetrics),
-			deleteitem.WithReturnValues(testReturnValues),
+			deleteitem.WithReturnValue(testReturnValues),
 			deleteitem.WithFilterConditionBuilder(&filter))
 
 		assert.Nil(t, err)
@@ -212,7 +206,9 @@ func TestClient_DescribeTable(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
+		expectedErr := types.InternalServerError{
+			Message: aws.String("dynamo down"),
+		}
 
 		m.On("DescribeTableWithContext",
 			ctx, mock.Anything).Return(nil, expectedErr)
@@ -226,7 +222,7 @@ func TestClient_DescribeTable(t *testing.T) {
 	t.Run("it calls the aws client properly", func(t *testing.T) {
 		client := setupFixture()
 
-		returnedTable := &dynamodb.TableDescription{
+		returnedTable := &types.TableDescription{
 			TableName: aws.String(testTableName),
 		}
 		m := client.awsClient.(*mockDynamoDB)
@@ -251,18 +247,15 @@ func TestClient_DescribeTable(t *testing.T) {
 
 func TestClient_GetItem(t *testing.T) {
 	ctx := context.Background()
-	testTableName := "test-table-name"
 
+	testTableName := "test-table-name"
 	testID := "uuid1-uuid2-uuid3-uuid4"
 	testName := "my item"
-	testReturnConsumedCapacity := aws.String("TOTAL")
-	testProjectionField := "my_field"
-	testAttributesToGet := []*string{
-		aws.String(testProjectionField),
-	}
-	validKey := map[string]*dynamodb.AttributeValue{
-		idFieldName:   {S: aws.String(testID)},
-		nameFieldName: {S: aws.String(testName)},
+	testReturnConsumedCapacity := types.ReturnConsumedCapacityTotal
+
+	validKey := map[string]types.AttributeValue{
+		idFieldName:   &types.AttributeValueMemberS{Value: testID},
+		nameFieldName: &types.AttributeValueMemberS{Value: testName},
 	}
 
 	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
@@ -301,7 +294,9 @@ func TestClient_GetItem(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
+		expectedErr := types.InternalServerError{
+			Message: aws.String("dynamo down"),
+		}
 
 		m.On("GetItemWithContext",
 			ctx, mock.Anything).Return(nil, expectedErr)
@@ -342,7 +337,6 @@ func TestClient_GetItem(t *testing.T) {
 		expr, _ := expression.NewBuilder().WithProjection(proj).Build()
 
 		expectedInput := &dynamodb.GetItemInput{
-			AttributesToGet:          testAttributesToGet,
 			Key:                      validKey,
 			TableName:                aws.String(testTableName),
 			ReturnConsumedCapacity:   testReturnConsumedCapacity,
@@ -358,7 +352,6 @@ func TestClient_GetItem(t *testing.T) {
 		}, nil)
 
 		actual, err := client.GetItem(ctx, testTableName,
-			getitem.WithAttributesToGet(testAttributesToGet),
 			getitem.WithConsistentRead(aws.Bool(true)),
 			getitem.WithKey(validKey),
 			getitem.WithReturnConsumedCapacity(testReturnConsumedCapacity),
@@ -379,7 +372,9 @@ func TestClient_ListTables(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
+		expectedErr := types.InternalServerError{
+			Message: aws.String("dynamo down"),
+		}
 
 		m.On("ListTablesWithContext",
 			ctx, mock.Anything).Return(nil, expectedErr)
@@ -399,10 +394,10 @@ func TestClient_ListTables(t *testing.T) {
 			ctx,
 			&dynamodb.ListTablesInput{
 				ExclusiveStartTableName: aws.String(testTableName),
-				Limit:                   aws.Int64(42),
+				Limit:                   aws.Int32(42),
 			}).Return(&dynamodb.ListTablesOutput{
-			TableNames: []*string{
-				aws.String(testTableName),
+			TableNames: []string{
+				testTableName,
 			},
 		}, nil)
 
@@ -424,13 +419,13 @@ func TestClient_PutItem(t *testing.T) {
 
 	testID := "uuid1-uuid-2uu-3-uuid4"
 	testName := "my item"
-	testReturnConsumedCapacity := aws.String("TOTAL")
-	testReturnItemCollectionMetrics := aws.String("SIZE")
-	testReturnValues := aws.String("ALL_OLD")
+	testReturnConsumedCapacity := types.ReturnConsumedCapacityTotal
+	testReturnItemCollectionMetrics := types.ReturnItemCollectionMetricsSize
+	testReturnValues := types.ReturnValueAllOld
 
-	validItem := map[string]*dynamodb.AttributeValue{
-		idFieldName:   {S: aws.String(testID)},
-		nameFieldName: {S: aws.String(testName)},
+	validItem := map[string]types.AttributeValue{
+		idFieldName:   &types.AttributeValueMemberS{Value: testID},
+		nameFieldName: &types.AttributeValueMemberS{Value: testName},
 	}
 
 	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
@@ -469,7 +464,9 @@ func TestClient_PutItem(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo Down"))
+		expectedErr := types.InternalServerError{
+			Message: aws.String("dynamo down"),
+		}
 
 		m.On("PutItemWithContext",
 			ctx, mock.Anything).Return(nil, expectedErr)
@@ -531,7 +528,7 @@ func TestClient_PutItem(t *testing.T) {
 			putitem.WithItem(validItem),
 			putitem.WithReturnConsumedCapacity(testReturnConsumedCapacity),
 			putitem.WithReturnItemCollectionMetrics(testReturnItemCollectionMetrics),
-			putitem.WithReturnValues(testReturnValues),
+			putitem.WithReturnValue(testReturnValues),
 			putitem.WithFilterConditionBuilder(&filter))
 
 		assert.Nil(t, err)
@@ -546,7 +543,7 @@ func TestClient_Query(t *testing.T) {
 
 	testID := "uuid1-uuid2-uuid3-uuid4"
 	testName := "my item"
-	testReturnConsumedCapacity := aws.String("TOTAL")
+	testReturnConsumedCapacity := types.ReturnConsumedCapacityTotal
 
 	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
 		client := setupFixture()
@@ -584,7 +581,9 @@ func TestClient_Query(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := awserr.New("400", "dynamo down", errors.New("dynamo down"))
+		expectedErr := types.InternalServerError{
+			Message: aws.String("dynamo down"),
+		}
 
 		m.On("QueryWithContext",
 			ctx, mock.Anything).Return(nil, expectedErr)
@@ -602,9 +601,9 @@ func TestClient_Query(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		returnedItems := []map[string]*dynamodb.AttributeValue{{
-			idFieldName:   {S: aws.String(testID)},
-			nameFieldName: {S: aws.String(testName)},
+		returnedItems := []map[string]types.AttributeValue{{
+			idFieldName:   &types.AttributeValueMemberS{Value: testID},
+			nameFieldName: &types.AttributeValueMemberS{Value: testName},
 		}}
 		keyBuilder := expression.Key(idFieldName).Equal(expression.Value(testID))
 
@@ -632,9 +631,9 @@ func TestClient_Query(t *testing.T) {
 		client := setupFixture()
 
 		testScanIndexForward := true
-		testSelect := "COUNT"
+		testSelect := types.SelectCount
 		testIndexName := "GSI1"
-		var testLimit int64 = 42
+		var testLimit int32 = 42
 
 		m := client.awsClient.(*mockDynamoDB)
 		proj := expression.NamesList(expression.Name(nameFieldName), expression.Name(idFieldName))
@@ -643,8 +642,8 @@ func TestClient_Query(t *testing.T) {
 
 		expr, _ := expression.NewBuilder().WithKeyCondition(key).WithFilter(filter).WithProjection(proj).Build()
 
-		exclusiveStartKey := map[string]*dynamodb.AttributeValue{
-			idFieldName: {S: aws.String(testID)},
+		exclusiveStartKey := map[string]types.AttributeValue{
+			idFieldName: &types.AttributeValueMemberS{Value: testID},
 		}
 
 		expectedInput := &dynamodb.QueryInput{
@@ -659,13 +658,13 @@ func TestClient_Query(t *testing.T) {
 			ReturnConsumedCapacity:    testReturnConsumedCapacity,
 			ProjectionExpression:      expr.Projection(),
 			ScanIndexForward:          aws.Bool(testScanIndexForward),
-			Select:                    aws.String(testSelect),
+			Select:                    testSelect,
 			TableName:                 aws.String(testTableName),
 		}
 
-		returnedItems := []map[string]*dynamodb.AttributeValue{{
-			idFieldName:   {S: aws.String(testID)},
-			nameFieldName: {S: aws.String(testName)},
+		returnedItems := []map[string]types.AttributeValue{{
+			idFieldName:   &types.AttributeValueMemberS{Value: testID},
+			nameFieldName: &types.AttributeValueMemberS{Value: testName},
 		}}
 
 		m.On("QueryWithContext",
@@ -699,7 +698,7 @@ func TestClient_Scan(t *testing.T) {
 
 	testID := "uuid1-uuid2-uuid3-uuid4"
 	testName := "my item"
-	testReturnConsumedCapacity := aws.String("TOTAL")
+	testReturnConsumedCapacity := types.ReturnConsumedCapacityTotal
 
 	t.Run("it requires a table name to be 3 or more characters", func(t *testing.T) {
 		client := setupFixture()
@@ -721,7 +720,9 @@ func TestClient_Scan(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := awserr.New("500", "dynamo down", errors.New("dynamo down"))
+		expectedErr := types.InternalServerError{
+			Message: aws.String("dynamo down"),
+		}
 
 		m.On("ScanWithContext",
 			ctx, mock.Anything).Return(nil, expectedErr)
@@ -737,9 +738,9 @@ func TestClient_Scan(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		returnedItems := []map[string]*dynamodb.AttributeValue{{
-			idFieldName:   {S: aws.String(testID)},
-			nameFieldName: {S: aws.String(testName)},
+		returnedItems := []map[string]types.AttributeValue{{
+			idFieldName:   &types.AttributeValueMemberS{Value: testID},
+			nameFieldName: &types.AttributeValueMemberS{Value: testName},
 		}}
 
 		m.On("ScanWithContext",
@@ -759,11 +760,11 @@ func TestClient_Scan(t *testing.T) {
 	t.Run("it sets all the parameters", func(t *testing.T) {
 		client := setupFixture()
 
-		testSelect := "COUNT"
+		testSelect := types.SelectCount
 		testIndexName := "GSI1"
-		var testSegment int64 = 2
-		var testTotalSegments int64 = 42
-		var testLimit int64 = 42
+		var testSegment int32 = 2
+		var testTotalSegments int32 = 42
+		var testLimit int32 = 42
 
 		m := client.awsClient.(*mockDynamoDB)
 
@@ -772,8 +773,8 @@ func TestClient_Scan(t *testing.T) {
 
 		expr, _ := expression.NewBuilder().WithFilter(filter).WithProjection(proj).Build()
 
-		exclusiveStartKey := map[string]*dynamodb.AttributeValue{
-			idFieldName: {S: aws.String(testID)},
+		exclusiveStartKey := map[string]types.AttributeValue{
+			idFieldName: &types.AttributeValueMemberS{Value: testID},
 		}
 
 		expectedInput := &dynamodb.ScanInput{
@@ -787,14 +788,14 @@ func TestClient_Scan(t *testing.T) {
 			ReturnConsumedCapacity:    testReturnConsumedCapacity,
 			ProjectionExpression:      expr.Projection(),
 			Segment:                   &testSegment,
-			Select:                    aws.String(testSelect),
+			Select:                    testSelect,
 			TableName:                 aws.String(testTableName),
 			TotalSegments:             &testTotalSegments,
 		}
 
-		returnedItems := []map[string]*dynamodb.AttributeValue{{
-			idFieldName:   {S: aws.String(testID)},
-			nameFieldName: {S: aws.String(testName)},
+		returnedItems := []map[string]types.AttributeValue{{
+			idFieldName:   &types.AttributeValueMemberS{Value: testID},
+			nameFieldName: &types.AttributeValueMemberS{Value: testName},
 		}}
 
 		m.On("ScanWithContext",

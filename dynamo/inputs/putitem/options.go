@@ -1,8 +1,8 @@
 package putitem
 
 import (
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 type Options struct {
@@ -14,16 +14,16 @@ type Options struct {
 	FilterConditionBuilder *expression.ConditionBuilder
 
 	// maps to PutItemInput.Item
-	Item map[string]*dynamodb.AttributeValue
+	Item map[string]types.AttributeValue
 
 	// maps to PutItemInput.ReturnConsumedCapacity
-	ReturnConsumedCapacity *string
+	ReturnConsumedCapacity types.ReturnConsumedCapacity
 
 	// maps to PutItemInput.ReturnItemCollectionMetrics
-	ReturnItemCollectionMetrics *string
+	ReturnItemCollectionMetrics types.ReturnItemCollectionMetrics
 
-	// maps to PutItemInput.ReturnValues
-	ReturnValues *string
+	// maps to PutItemInput.ReturnValue
+	ReturnValue types.ReturnValue
 }
 
 type OptionFunc func(*Options)
@@ -38,7 +38,7 @@ func NewOptions(input ...OptionFunc) *Options {
 	return options
 }
 
-func WithItem(input map[string]*dynamodb.AttributeValue) OptionFunc {
+func WithItem(input map[string]types.AttributeValue) OptionFunc {
 	return func(options *Options) {
 		options.Item = input
 	}
@@ -50,20 +50,20 @@ func WithFilterConditionBuilder(input *expression.ConditionBuilder) OptionFunc {
 	}
 }
 
-func WithReturnConsumedCapacity(input *string) OptionFunc {
+func WithReturnConsumedCapacity(input types.ReturnConsumedCapacity) OptionFunc {
 	return func(options *Options) {
 		options.ReturnConsumedCapacity = input
 	}
 }
 
-func WithReturnItemCollectionMetrics(input *string) OptionFunc {
+func WithReturnItemCollectionMetrics(input types.ReturnItemCollectionMetrics) OptionFunc {
 	return func(options *Options) {
 		options.ReturnItemCollectionMetrics = input
 	}
 }
 
-func WithReturnValues(input *string) OptionFunc {
+func WithReturnValue(input types.ReturnValue) OptionFunc {
 	return func(options *Options) {
-		options.ReturnValues = input
+		options.ReturnValue = input
 	}
 }

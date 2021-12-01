@@ -1,21 +1,17 @@
 package dynamo
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
+	"context"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/stretchr/testify/mock"
 )
 
 type mockDynamoDB struct {
-	dynamodbiface.DynamoDBAPI
 	mock.Mock
 }
 
-func (m *mockDynamoDB) PutItemWithContext(ctx aws.Context, in *dynamodb.PutItemInput, opts ...request.Option) (*dynamodb.PutItemOutput, error) {
+func (m *mockDynamoDB) PutItem(ctx context.Context, in *dynamodb.PutItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.PutItemOutput, error) {
 	args := m.Called(ctx, in)
 
 	if args.Error(1) != nil {
@@ -25,7 +21,7 @@ func (m *mockDynamoDB) PutItemWithContext(ctx aws.Context, in *dynamodb.PutItemI
 	return args.Get(0).(*dynamodb.PutItemOutput), nil
 }
 
-func (m *mockDynamoDB) DeleteItemWithContext(ctx aws.Context, in *dynamodb.DeleteItemInput, opts ...request.Option) (*dynamodb.DeleteItemOutput, error) {
+func (m *mockDynamoDB) DeleteItem(ctx context.Context, in *dynamodb.DeleteItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.DeleteItemOutput, error) {
 	args := m.Called(ctx, in)
 
 	if args.Error(1) != nil {
@@ -35,7 +31,7 @@ func (m *mockDynamoDB) DeleteItemWithContext(ctx aws.Context, in *dynamodb.Delet
 	return args.Get(0).(*dynamodb.DeleteItemOutput), nil
 }
 
-func (m *mockDynamoDB) GetItemWithContext(ctx aws.Context, in *dynamodb.GetItemInput, opts ...request.Option) (*dynamodb.GetItemOutput, error) {
+func (m *mockDynamoDB) GetItem(ctx context.Context, in *dynamodb.GetItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.GetItemOutput, error) {
 	args := m.Called(ctx, in)
 
 	if args.Error(1) != nil {
@@ -45,7 +41,7 @@ func (m *mockDynamoDB) GetItemWithContext(ctx aws.Context, in *dynamodb.GetItemI
 	return args.Get(0).(*dynamodb.GetItemOutput), nil
 }
 
-func (m *mockDynamoDB) DescribeTableWithContext(ctx aws.Context, in *dynamodb.DescribeTableInput, opts ...request.Option) (*dynamodb.DescribeTableOutput, error) {
+func (m *mockDynamoDB) DescribeTable(ctx context.Context, in *dynamodb.DescribeTableInput, optFns ...func(*dynamodb.Options)) (*dynamodb.DescribeTableOutput, error) {
 	args := m.Called(ctx, in)
 
 	if args.Error(1) != nil {
@@ -55,7 +51,7 @@ func (m *mockDynamoDB) DescribeTableWithContext(ctx aws.Context, in *dynamodb.De
 	return args.Get(0).(*dynamodb.DescribeTableOutput), nil
 }
 
-func (m *mockDynamoDB) ListTablesWithContext(ctx aws.Context, in *dynamodb.ListTablesInput, opts ...request.Option) (*dynamodb.ListTablesOutput, error) {
+func (m *mockDynamoDB) ListTables(ctx context.Context, in *dynamodb.ListTablesInput, optFns ...func(*dynamodb.Options)) (*dynamodb.ListTablesOutput, error) {
 	args := m.Called(ctx, in)
 
 	if args.Error(1) != nil {
@@ -65,7 +61,7 @@ func (m *mockDynamoDB) ListTablesWithContext(ctx aws.Context, in *dynamodb.ListT
 	return args.Get(0).(*dynamodb.ListTablesOutput), nil
 }
 
-func (m *mockDynamoDB) QueryWithContext(ctx aws.Context, in *dynamodb.QueryInput, opts ...request.Option) (*dynamodb.QueryOutput, error) {
+func (m *mockDynamoDB) Query(ctx context.Context, in *dynamodb.QueryInput, optFns ...func(*dynamodb.Options)) (*dynamodb.QueryOutput, error) {
 	args := m.Called(ctx, in)
 
 	if args.Error(1) != nil {
@@ -75,7 +71,7 @@ func (m *mockDynamoDB) QueryWithContext(ctx aws.Context, in *dynamodb.QueryInput
 	return args.Get(0).(*dynamodb.QueryOutput), nil
 }
 
-func (m *mockDynamoDB) ScanWithContext(ctx aws.Context, in *dynamodb.ScanInput, opts ...request.Option) (*dynamodb.ScanOutput, error) {
+func (m *mockDynamoDB) Scan(ctx context.Context, in *dynamodb.ScanInput, optFns ...func(*dynamodb.Options)) (*dynamodb.ScanOutput, error) {
 	args := m.Called(ctx, in)
 
 	if args.Error(1) != nil {

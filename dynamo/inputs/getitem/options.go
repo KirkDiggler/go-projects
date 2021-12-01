@@ -1,14 +1,11 @@
 package getitem
 
 import (
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 type Options struct {
-	// maps to GetItemInput.AttributesToGet
-	AttributesToGet []*string `min:"1" type:"list"`
-
 	// maps to GetItemInput.ConsistentRead
 	ConsistentRead *bool `type:"boolean"`
 
@@ -21,10 +18,10 @@ type Options struct {
 	// maps to GetItemInput.Key
 	//
 	// Key is a required field
-	Key map[string]*dynamodb.AttributeValue
+	Key map[string]types.AttributeValue
 
 	// maps to GetItemInput.ReturnConsumedCapacity
-	ReturnConsumedCapacity *string
+	ReturnConsumedCapacity types.ReturnConsumedCapacity
 }
 
 type OptionFunc func(*Options)
@@ -39,12 +36,6 @@ func NewOptions(input ...OptionFunc) *Options {
 	return options
 }
 
-func WithAttributesToGet(input []*string) OptionFunc {
-	return func(options *Options) {
-		options.AttributesToGet = input
-	}
-}
-
 func WithConsistentRead(input *bool) OptionFunc {
 	return func(options *Options) {
 		options.ConsistentRead = input
@@ -57,13 +48,13 @@ func WithConditionalExpression(input *expression.ProjectionBuilder) OptionFunc {
 	}
 }
 
-func WithKey(input map[string]*dynamodb.AttributeValue) OptionFunc {
+func WithKey(input map[string]types.AttributeValue) OptionFunc {
 	return func(options *Options) {
 		options.Key = input
 	}
 }
 
-func WithReturnConsumedCapacity(input *string) OptionFunc {
+func WithReturnConsumedCapacity(input types.ReturnConsumedCapacity) OptionFunc {
 	return func(options *Options) {
 		options.ReturnConsumedCapacity = input
 	}

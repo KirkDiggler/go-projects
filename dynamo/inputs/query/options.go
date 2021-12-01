@@ -1,22 +1,22 @@
 package query
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 type Options struct {
 	ConsistentRead         *bool
-	ExclusiveStartKey      map[string]*dynamodb.AttributeValue
+	ExclusiveStartKey      map[string]types.AttributeValue
 	FilterConditionBuilder *expression.ConditionBuilder
 	IndexName              *string
 	KeyConditionBuilder    *expression.KeyConditionBuilder
-	Limit                  *int64
+	Limit                  *int32
 	ProjectionBuilder      *expression.ProjectionBuilder
-	ReturnConsumedCapacity *string
+	ReturnConsumedCapacity types.ReturnConsumedCapacity
 	ScanIndexForward       *bool
-	Select                 *string
+	Select                 types.Select
 }
 
 type OptionFunc func(*Options)
@@ -37,7 +37,7 @@ func WithConsistentRead(input *bool) OptionFunc {
 	}
 }
 
-func WithExclusiveStartKey(input map[string]*dynamodb.AttributeValue) OptionFunc {
+func WithExclusiveStartKey(input map[string]types.AttributeValue) OptionFunc {
 	return func(options *Options) {
 		options.ExclusiveStartKey = input
 	}
@@ -61,9 +61,9 @@ func WithKeyConditionBuilder(input *expression.KeyConditionBuilder) OptionFunc {
 	}
 }
 
-func WithLimit(input int64) OptionFunc {
+func WithLimit(input int32) OptionFunc {
 	return func(options *Options) {
-		options.Limit = aws.Int64(input)
+		options.Limit = aws.Int32(input)
 	}
 }
 
@@ -73,7 +73,7 @@ func WithProjectionBuilder(input *expression.ProjectionBuilder) OptionFunc {
 	}
 }
 
-func WithReturnConsumedCapacity(input *string) OptionFunc {
+func WithReturnConsumedCapacity(input types.ReturnConsumedCapacity) OptionFunc {
 	return func(options *Options) {
 		options.ReturnConsumedCapacity = input
 	}
@@ -85,8 +85,8 @@ func WithScanIndexForward(input bool) OptionFunc {
 	}
 }
 
-func WithSelect(input string) OptionFunc {
+func WithSelect(input types.Select) OptionFunc {
 	return func(options *Options) {
-		options.Select = aws.String(input)
+		options.Select = input
 	}
 }

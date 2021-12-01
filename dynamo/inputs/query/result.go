@@ -1,11 +1,13 @@
 package query
 
-import "github.com/aws/aws-sdk-go/service/dynamodb"
+import (
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+)
 
 type Result struct {
-	ConsumedCapacity *dynamodb.ConsumedCapacity
-	Count            *int64
-	Items            []map[string]*dynamodb.AttributeValue
-	LastEvaluatedKey map[string]*dynamodb.AttributeValue
-	ScannedCount     *int64
+	ConsumedCapacity *types.ConsumedCapacity
+	Count            int32
+	Items            []map[string]types.AttributeValue
+	LastEvaluatedKey map[string]types.AttributeValue
+	ScannedCount     int32
 }
