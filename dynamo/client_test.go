@@ -109,11 +109,11 @@ func TestClient_DeleteItem(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := types.InternalServerError{
+		expectedErr := &types.InternalServerError{
 			Message: aws.String("dynamo down"),
 		}
 
-		m.On("DeleteItemWithContext",
+		m.On("DeleteItem",
 			ctx, mock.Anything).Return(nil, expectedErr)
 
 		actual, err := client.DeleteItem(ctx, testTableName,
@@ -128,7 +128,7 @@ func TestClient_DeleteItem(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		m.On("DeleteItemWithContext",
+		m.On("DeleteItem",
 			ctx,
 			&dynamodb.DeleteItemInput{
 				Key:       validKey,
@@ -163,7 +163,7 @@ func TestClient_DeleteItem(t *testing.T) {
 			ExpressionAttributeValues:   expr.Values(),
 		}
 
-		m.On("DeleteItemWithContext",
+		m.On("DeleteItem",
 			ctx,
 			expectedInput).Return(&dynamodb.DeleteItemOutput{
 			Attributes: validKey,
@@ -206,11 +206,11 @@ func TestClient_DescribeTable(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := types.InternalServerError{
+		expectedErr := &types.InternalServerError{
 			Message: aws.String("dynamo down"),
 		}
 
-		m.On("DescribeTableWithContext",
+		m.On("DescribeTable",
 			ctx, mock.Anything).Return(nil, expectedErr)
 
 		actual, err := client.DescribeTable(ctx, testTableName)
@@ -227,7 +227,7 @@ func TestClient_DescribeTable(t *testing.T) {
 		}
 		m := client.awsClient.(*mockDynamoDB)
 
-		m.On("DescribeTableWithContext",
+		m.On("DescribeTable",
 			ctx,
 			&dynamodb.DescribeTableInput{
 				TableName: aws.String(testTableName),
@@ -294,11 +294,11 @@ func TestClient_GetItem(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := types.InternalServerError{
+		expectedErr := &types.InternalServerError{
 			Message: aws.String("dynamo down"),
 		}
 
-		m.On("GetItemWithContext",
+		m.On("GetItem",
 			ctx, mock.Anything).Return(nil, expectedErr)
 
 		actual, err := client.GetItem(ctx, testTableName,
@@ -313,7 +313,7 @@ func TestClient_GetItem(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		m.On("GetItemWithContext",
+		m.On("GetItem",
 			ctx,
 			&dynamodb.GetItemInput{
 				Key:       validKey,
@@ -345,7 +345,7 @@ func TestClient_GetItem(t *testing.T) {
 			ConsistentRead:           aws.Bool(true),
 		}
 
-		m.On("GetItemWithContext",
+		m.On("GetItem",
 			ctx,
 			expectedInput).Return(&dynamodb.GetItemOutput{
 			Item: validKey,
@@ -372,11 +372,11 @@ func TestClient_ListTables(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := types.InternalServerError{
+		expectedErr := &types.InternalServerError{
 			Message: aws.String("dynamo down"),
 		}
 
-		m.On("ListTablesWithContext",
+		m.On("ListTables",
 			ctx, mock.Anything).Return(nil, expectedErr)
 
 		actual, err := client.ListTables(ctx)
@@ -390,7 +390,7 @@ func TestClient_ListTables(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		m.On("ListTablesWithContext",
+		m.On("ListTables",
 			ctx,
 			&dynamodb.ListTablesInput{
 				ExclusiveStartTableName: aws.String(testTableName),
@@ -407,8 +407,8 @@ func TestClient_ListTables(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
-		assert.Equal(t, []*string{
-			aws.String(testTableName),
+		assert.Equal(t, []string{
+			testTableName,
 		}, actual.TableNames)
 	})
 }
@@ -464,11 +464,11 @@ func TestClient_PutItem(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := types.InternalServerError{
+		expectedErr := &types.InternalServerError{
 			Message: aws.String("dynamo down"),
 		}
 
-		m.On("PutItemWithContext",
+		m.On("PutItem",
 			ctx, mock.Anything).Return(nil, expectedErr)
 
 		actual, err := client.PutItem(ctx, testTableName,
@@ -483,7 +483,7 @@ func TestClient_PutItem(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		m.On("PutItemWithContext",
+		m.On("PutItem",
 			ctx,
 			&dynamodb.PutItemInput{
 				Item:      validItem,
@@ -518,7 +518,7 @@ func TestClient_PutItem(t *testing.T) {
 			ExpressionAttributeValues:   expr.Values(),
 		}
 
-		m.On("PutItemWithContext",
+		m.On("PutItem",
 			ctx,
 			expectedInput).Return(&dynamodb.PutItemOutput{
 			Attributes: validItem,
@@ -581,11 +581,11 @@ func TestClient_Query(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := types.InternalServerError{
+		expectedErr := &types.InternalServerError{
 			Message: aws.String("dynamo down"),
 		}
 
-		m.On("QueryWithContext",
+		m.On("Query",
 			ctx, mock.Anything).Return(nil, expectedErr)
 		keyBuilder := expression.Key(idFieldName).Equal(expression.Value(testID))
 
@@ -609,7 +609,7 @@ func TestClient_Query(t *testing.T) {
 
 		expr, _ := expression.NewBuilder().WithKeyCondition(keyBuilder).Build()
 
-		m.On("QueryWithContext",
+		m.On("Query",
 			ctx,
 			&dynamodb.QueryInput{
 				KeyConditionExpression:    expr.KeyCondition(),
@@ -667,7 +667,7 @@ func TestClient_Query(t *testing.T) {
 			nameFieldName: &types.AttributeValueMemberS{Value: testName},
 		}}
 
-		m.On("QueryWithContext",
+		m.On("Query",
 			ctx,
 			expectedInput).Return(&dynamodb.QueryOutput{
 			Items: returnedItems,
@@ -720,11 +720,11 @@ func TestClient_Scan(t *testing.T) {
 
 		m := client.awsClient.(*mockDynamoDB)
 
-		expectedErr := types.InternalServerError{
+		expectedErr := &types.InternalServerError{
 			Message: aws.String("dynamo down"),
 		}
 
-		m.On("ScanWithContext",
+		m.On("Scan",
 			ctx, mock.Anything).Return(nil, expectedErr)
 
 		actual, err := client.Scan(ctx, testTableName)
@@ -743,7 +743,7 @@ func TestClient_Scan(t *testing.T) {
 			nameFieldName: &types.AttributeValueMemberS{Value: testName},
 		}}
 
-		m.On("ScanWithContext",
+		m.On("Scan",
 			ctx,
 			&dynamodb.ScanInput{
 				TableName: aws.String(testTableName),
@@ -798,7 +798,7 @@ func TestClient_Scan(t *testing.T) {
 			nameFieldName: &types.AttributeValueMemberS{Value: testName},
 		}}
 
-		m.On("ScanWithContext",
+		m.On("Scan",
 			ctx,
 			expectedInput).Return(&dynamodb.ScanOutput{
 			Items: returnedItems,
