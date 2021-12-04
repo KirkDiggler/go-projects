@@ -37,11 +37,11 @@ const (
 )
 
 type Client struct {
-	awsClient DynamoAPI
+	awsClient awsDynamoAPI
 }
 
 type ClientConfig struct {
-	AWSClient DynamoAPI
+	AWSClient awsDynamoAPI
 }
 
 func NewClient(cfg *ClientConfig) (*Client, error) {
