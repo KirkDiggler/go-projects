@@ -24,6 +24,8 @@ type Options struct {
 
 	// maps to PutItemInput.ReturnValue
 	ReturnValue types.ReturnValue
+
+	Entity interface{}
 }
 
 type OptionFunc func(*Options)
@@ -65,5 +67,11 @@ func WithReturnItemCollectionMetrics(input types.ReturnItemCollectionMetrics) Op
 func WithReturnValue(input types.ReturnValue) OptionFunc {
 	return func(options *Options) {
 		options.ReturnValue = input
+	}
+}
+
+func WithEntity(input interface{}) OptionFunc {
+	return func(options *Options) {
+		options.Entity = input
 	}
 }

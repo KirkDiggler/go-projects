@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/scan"
 
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/query"
@@ -186,8 +188,17 @@ func (c *Client) PutItem(ctx context.Context, tableName string, putOptions ...pu
 
 	options := putitem.NewOptions(putOptions...)
 
-	if options.Item == nil {
+	if options.Item == nil && options.Entity == nil {
 		return nil, errors.New(requiredItemMsg)
+	}
+
+	if options.Entity != nil {
+		item, err := attributevalue.MarshalMap(options.Entity)
+		if err != nil {
+			return nil, err
+		}
+
+		options.Item = item
 	}
 
 	dynamoInput := &dynamodb.PutItemInput{
