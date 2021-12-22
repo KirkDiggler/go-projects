@@ -22,6 +22,9 @@ type Options struct {
 
 	// maps to GetItemInput.ReturnConsumedCapacity
 	ReturnConsumedCapacity types.ReturnConsumedCapacity
+
+	// Marshal the returned attributes into the Entity value
+	Entity interface{}
 }
 
 type OptionFunc func(*Options)
@@ -57,5 +60,14 @@ func WithKey(input map[string]types.AttributeValue) OptionFunc {
 func WithReturnConsumedCapacity(input types.ReturnConsumedCapacity) OptionFunc {
 	return func(options *Options) {
 		options.ReturnConsumedCapacity = input
+	}
+}
+
+// AsEntity
+//
+// input is a struct that the returned attributes are unmarshaled into
+func AsEntity(input interface{}) OptionFunc {
+	return func(options *Options) {
+		options.Entity = input
 	}
 }

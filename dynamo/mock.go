@@ -3,6 +3,8 @@ package dynamo
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/describetable"
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/getitem"
 	"github.com/KirkDiggler/go-projects/dynamo/inputs/listtables"
@@ -45,6 +47,12 @@ func (m *Mock) GetItem(ctx context.Context, tableName string, getOptions ...geti
 
 	if args.Error(1) != nil {
 		return nil, args.Error(1)
+	}
+	if options.Entity != nil {
+		err := attributevalue.UnmarshalMap(args.Get(0).(*getitem.Result).Item, options.Entity)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return args.Get(0).(*getitem.Result), nil

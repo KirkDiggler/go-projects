@@ -154,6 +154,13 @@ func (c *Client) GetItem(ctx context.Context, tableName string, getOptions ...ge
 		return nil, err
 	}
 
+	if options.Entity != nil {
+		err := attributevalue.UnmarshalMap(result.Item, options.Entity)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &getitem.Result{
 		Item:             result.Item,
 		ConsumedCapacity: result.ConsumedCapacity,

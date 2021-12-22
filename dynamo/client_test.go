@@ -26,6 +26,11 @@ const (
 	nameFieldName = "name"
 )
 
+type testStruct struct {
+	ID   string `dynamodbav:"id"`
+	Name string `dynamodbav:"name"`
+}
+
 func setupFixture() *Client {
 	return &Client{awsClient: &mockDynamoDB{}}
 }
@@ -329,6 +334,29 @@ func TestClient_GetItem(t *testing.T) {
 		assert.NotNil(t, actual)
 		assert.Equal(t, validKey, actual.Item)
 	})
+	t.Run("it returns AsEntity", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		m.On("GetItem",
+			ctx,
+			&dynamodb.GetItemInput{
+				Key:       validKey,
+				TableName: aws.String(testTableName),
+			}).Return(&dynamodb.GetItemOutput{
+			Item: validKey,
+		}, nil)
+
+		actual := testStruct{}
+		_, err := client.GetItem(ctx, testTableName,
+			getitem.WithKey(validKey),
+			getitem.AsEntity(&actual))
+
+		assert.Nil(t, err)
+		assert.Equal(t, testID, actual.ID)
+		assert.Equal(t, testName, actual.Name)
+	})
 	t.Run("it sets all the parameters", func(t *testing.T) {
 		client := setupFixture()
 
@@ -411,11 +439,6 @@ func TestClient_ListTables(t *testing.T) {
 			testTableName,
 		}, actual.TableNames)
 	})
-}
-
-type testStruct struct {
-	ID   string `dynamodbav:"id"`
-	Name string `dynamodbav:"name"`
 }
 
 func TestClient_PutItem(t *testing.T) {
