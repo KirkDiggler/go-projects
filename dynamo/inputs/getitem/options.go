@@ -45,7 +45,7 @@ func WithConsistentRead(input *bool) OptionFunc {
 	}
 }
 
-func WithConditionalExpression(input *expression.ProjectionBuilder) OptionFunc {
+func WithProjectionBuilder(input *expression.ProjectionBuilder) OptionFunc {
 	return func(options *Options) {
 		options.ProjectionBuilder = input
 	}

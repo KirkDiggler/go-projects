@@ -383,7 +383,7 @@ func TestClient_GetItem(t *testing.T) {
 			getitem.WithConsistentRead(aws.Bool(true)),
 			getitem.WithKey(validKey),
 			getitem.WithReturnConsumedCapacity(testReturnConsumedCapacity),
-			getitem.WithConditionalExpression(&proj))
+			getitem.WithProjectionBuilder(&proj))
 
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
