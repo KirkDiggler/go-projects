@@ -48,6 +48,7 @@ func (m *Mock) GetItem(ctx context.Context, tableName string, getOptions ...geti
 	if args.Error(1) != nil {
 		return nil, args.Error(1)
 	}
+
 	if options.Entity != nil {
 		err := attributevalue.UnmarshalMap(args.Get(0).(*getitem.Result).Item, options.Entity)
 		if err != nil {
