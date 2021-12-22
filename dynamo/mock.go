@@ -88,6 +88,13 @@ func (m *Mock) Query(ctx context.Context, tableName string, queryOptions ...quer
 		return nil, args.Error(1)
 	}
 
+	if options.Entities != nil {
+		err := attributevalue.UnmarshalListOfMaps(args.Get(0).(*query.Result).Items, options.Entities)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return args.Get(0).(*query.Result), nil
 }
 

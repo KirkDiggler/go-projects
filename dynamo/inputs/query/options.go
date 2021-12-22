@@ -17,6 +17,7 @@ type Options struct {
 	ReturnConsumedCapacity types.ReturnConsumedCapacity
 	ScanIndexForward       *bool
 	Select                 types.Select
+	Entities               interface{}
 }
 
 type OptionFunc func(*Options)
@@ -88,5 +89,14 @@ func WithScanIndexForward(input bool) OptionFunc {
 func WithSelect(input types.Select) OptionFunc {
 	return func(options *Options) {
 		options.Select = input
+	}
+}
+
+// AsSliceOfEntities
+//
+// input is a slice of structs that the returned Items are unmarshaled into
+func AsSliceOfEntities(input interface{}) OptionFunc {
+	return func(options *Options) {
+		options.Entities = input
 	}
 }

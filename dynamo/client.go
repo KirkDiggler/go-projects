@@ -287,6 +287,13 @@ func (c *Client) Query(ctx context.Context, tableName string, queryOptions ...qu
 		return nil, err
 	}
 
+	if options.Entities != nil {
+		err := attributevalue.UnmarshalListOfMaps(result.Items, options.Entities)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &query.Result{
 		ConsumedCapacity: result.ConsumedCapacity,
 		Count:            result.Count,

@@ -682,6 +682,43 @@ func TestClient_Query(t *testing.T) {
 		assert.NotNil(t, actual)
 		assert.Equal(t, returnedItems, actual.Items)
 	})
+	t.Run("it sets AsSliceOfEntities", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		returnedItems := []map[string]types.AttributeValue{{
+			idFieldName:   &types.AttributeValueMemberS{Value: testID},
+			nameFieldName: &types.AttributeValueMemberS{Value: testName},
+		}}
+		keyBuilder := expression.Key(idFieldName).Equal(expression.Value(testID))
+
+		expr, _ := expression.NewBuilder().WithKeyCondition(keyBuilder).Build()
+
+		m.On("Query",
+			ctx,
+			&dynamodb.QueryInput{
+				KeyConditionExpression:    expr.KeyCondition(),
+				ExpressionAttributeNames:  expr.Names(),
+				ExpressionAttributeValues: expr.Values(),
+				TableName:                 aws.String(testTableName),
+			}).Return(&dynamodb.QueryOutput{
+			Items: returnedItems,
+		}, nil)
+
+		actual := make([]*testStruct, 0)
+
+		_, err := client.Query(ctx, testTableName,
+			query.WithKeyConditionBuilder(&keyBuilder),
+			query.AsSliceOfEntities(&actual))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, 1, len(actual))
+		assert.Equal(t, testID, actual[0].ID)
+		assert.Equal(t, testName, actual[0].Name)
+
+	})
 	t.Run("it sets all the parameters", func(t *testing.T) {
 		client := setupFixture()
 
