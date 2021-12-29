@@ -26,6 +26,11 @@ const (
 	nameFieldName = "name"
 )
 
+type testStruct struct {
+	ID   string `dynamodbav:"id"`
+	Name string `dynamodbav:"name"`
+}
+
 func setupFixture() *Client {
 	return &Client{awsClient: &mockDynamoDB{}}
 }
@@ -329,6 +334,29 @@ func TestClient_GetItem(t *testing.T) {
 		assert.NotNil(t, actual)
 		assert.Equal(t, validKey, actual.Item)
 	})
+	t.Run("it returns AsEntity", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		m.On("GetItem",
+			ctx,
+			&dynamodb.GetItemInput{
+				Key:       validKey,
+				TableName: aws.String(testTableName),
+			}).Return(&dynamodb.GetItemOutput{
+			Item: validKey,
+		}, nil)
+
+		actual := testStruct{}
+		_, err := client.GetItem(ctx, testTableName,
+			getitem.WithKey(validKey),
+			getitem.AsEntity(&actual))
+
+		assert.Nil(t, err)
+		assert.Equal(t, testID, actual.ID)
+		assert.Equal(t, testName, actual.Name)
+	})
 	t.Run("it sets all the parameters", func(t *testing.T) {
 		client := setupFixture()
 
@@ -355,7 +383,7 @@ func TestClient_GetItem(t *testing.T) {
 			getitem.WithConsistentRead(aws.Bool(true)),
 			getitem.WithKey(validKey),
 			getitem.WithReturnConsumedCapacity(testReturnConsumedCapacity),
-			getitem.WithConditionalExpression(&proj))
+			getitem.WithProjectionBuilder(&proj))
 
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
@@ -499,6 +527,33 @@ func TestClient_PutItem(t *testing.T) {
 		assert.NotNil(t, actual)
 		assert.Equal(t, validItem, actual.Attributes)
 	})
+	t.Run("it sets With Entity", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		m.On("PutItem",
+			ctx,
+			&dynamodb.PutItemInput{
+				Item:      validItem,
+				TableName: aws.String(testTableName),
+			}).Return(&dynamodb.PutItemOutput{
+			Attributes: validItem,
+		}, nil)
+
+		input := &testStruct{
+			ID:   testID,
+			Name: testName,
+		}
+		actual, err := client.PutItem(ctx, testTableName,
+			putitem.WithEntity(input))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, validItem, actual.Attributes)
+
+		m.AssertExpectations(t)
+	})
 	t.Run("it sets all the parameters", func(t *testing.T) {
 		client := setupFixture()
 
@@ -626,6 +681,43 @@ func TestClient_Query(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
 		assert.Equal(t, returnedItems, actual.Items)
+	})
+	t.Run("it sets AsSliceOfEntities", func(t *testing.T) {
+		client := setupFixture()
+
+		m := client.awsClient.(*mockDynamoDB)
+
+		returnedItems := []map[string]types.AttributeValue{{
+			idFieldName:   &types.AttributeValueMemberS{Value: testID},
+			nameFieldName: &types.AttributeValueMemberS{Value: testName},
+		}}
+		keyBuilder := expression.Key(idFieldName).Equal(expression.Value(testID))
+
+		expr, _ := expression.NewBuilder().WithKeyCondition(keyBuilder).Build()
+
+		m.On("Query",
+			ctx,
+			&dynamodb.QueryInput{
+				KeyConditionExpression:    expr.KeyCondition(),
+				ExpressionAttributeNames:  expr.Names(),
+				ExpressionAttributeValues: expr.Values(),
+				TableName:                 aws.String(testTableName),
+			}).Return(&dynamodb.QueryOutput{
+			Items: returnedItems,
+		}, nil)
+
+		actual := make([]*testStruct, 0)
+
+		_, err := client.Query(ctx, testTableName,
+			query.WithKeyConditionBuilder(&keyBuilder),
+			query.AsSliceOfEntities(&actual))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, 1, len(actual))
+		assert.Equal(t, testID, actual[0].ID)
+		assert.Equal(t, testName, actual[0].Name)
+
 	})
 	t.Run("it sets all the parameters", func(t *testing.T) {
 		client := setupFixture()

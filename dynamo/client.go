@@ -154,6 +154,13 @@ func (c *Client) GetItem(ctx context.Context, tableName string, getOptions ...ge
 		return nil, err
 	}
 
+	if options.Entity != nil {
+		err := attributevalue.UnmarshalMap(result.Item, options.Entity)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &getitem.Result{
 		Item:             result.Item,
 		ConsumedCapacity: result.ConsumedCapacity,
@@ -278,6 +285,13 @@ func (c *Client) Query(ctx context.Context, tableName string, queryOptions ...qu
 	result, err := c.awsClient.Query(ctx, dynamoInput)
 	if err != nil {
 		return nil, err
+	}
+
+	if options.Entities != nil {
+		err := attributevalue.UnmarshalListOfMaps(result.Items, options.Entities)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &query.Result{
