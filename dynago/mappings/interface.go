@@ -6,13 +6,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-type EntityInterface interface {
+type Entity interface {
+	GetName() string
 	GetPartitionFields() []string
 	GetSortFields() []string
 }
 
 type Interface interface {
-	EntityInterface
-	BuildPartitionValues(ctx context.Context, values map[string]*types.AttributeValue) (string, error)
-	BuildSortValues(ctx context.Context, values map[string]*types.AttributeValue) (string, error)
+	Entity
+	BuildPartitionValues(ctx context.Context, values map[string]types.AttributeValue) (string, error)
+	BuildSortValues(ctx context.Context, values map[string]types.AttributeValue) (string, error)
 }

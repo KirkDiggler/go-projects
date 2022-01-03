@@ -82,21 +82,62 @@ func (r *repoImpl) Put(context.Context, ...func(*putitem.Options)) (*putitem.Res
 	return nil, errors.New("not implemented")
 }
 
-func buildMapping(existing *schemas.Mapping, tableDesc *types.TableDescription, tableMapping mappings.Interface, indexMappings []mappings.Index) (*schemas.Mapping, error) {
-	if validErr := mappingIsValid(existing, tableDesc, tableMapping, indexMappings); validErr != nil {
+func buildMapping(storedMapping *schemas.Mapping, tableDesc *types.TableDescription, tableMapping mappings.Interface, indexMappings []mappings.Index) (*schemas.Mapping, error) {
+	if validErr := mappingIsValid(storedMapping, tableDesc, tableMapping, indexMappings); validErr != nil {
 		return nil, validErr
 	}
 
-	if existing == nil {
-		existing = &schemas.Mapping{}
+	if storedMapping == nil {
+		storedMapping = &schemas.Mapping{}
 	}
 
-	if existing.Table == nil {
+	if storedMapping.Table == nil {
 		return buildNewMapping(tableMapping, indexMappings), nil
 	}
 
 	// table has to match to pass validation so we move onto the indexes
+	// Indexes have passed partition field checks so they must match,
+	// we will focus on checking sort keys and new index mappings
+	for _, index := range indexMappings {
+		if existing, ok := storedMapping.Indexes[index.Name]; ok {
+			if len(existing.Mapping.GetSortFields()) != len(index.Mapping.GetSortFields()) {
 
+			}
+		}
+	}
+
+	for k, v := range storedMapping.Indexes {
+		found := false
+		for _, index := range indexMappings {
+			if v.Name == index.Name {
+				found = true
+				for idx, field := range v.Mapping.GetPartitionFields() {
+					if field != index.Mapping.GetPartitionFields()[idx] {
+						return nil, fmt.Errorf("index %s partrition field mismatch with mapping, existing %s != %s",
+							index.Name,
+							field,
+							tableMapping.GetPartitionFields()[idx])
+					}
+				}
+
+				for idx, field := range v.Mapping.GetSortFields() {
+					if field != index.Mapping.GetSortFields()[idx] {
+						return nil, fmt.Errorf("index %s sort field mismatch with mapping, existing %s != %s",
+							index.Name,
+							field,
+							tableMapping.GetSortFields()[idx])
+					}
+				}
+			}
+		}
+
+		if !found {
+			return nil, fmt.Errorf("storedMapping index mapping %s assigned to Global Secondary Index %s was not found",
+				v.Name, k)
+		}
+	}
+
+	return storedMapping, nil
 }
 
 func buildNewMapping(tableMapping mappings.Interface, indexMappings []mappings.Index) *schemas.Mapping {
@@ -152,6 +193,7 @@ func mappingIsValid(existing *schemas.Mapping, tableDesc *types.TableDescription
 							tableMapping.GetPartitionFields()[idx])
 					}
 				}
+
 				for idx, field := range v.Mapping.GetSortFields() {
 					if field != index.Mapping.GetSortFields()[idx] {
 						return fmt.Errorf("index %s sort field mismatch with mapping, existing %s != %s",
@@ -162,8 +204,10 @@ func mappingIsValid(existing *schemas.Mapping, tableDesc *types.TableDescription
 				}
 			}
 		}
-		if found == false {
-			// assign new mapping
+
+		if !found {
+			return fmt.Errorf("existing index mapping %s assigned to Global Secondary Index %s was not found",
+				v.Name, k)
 		}
 	}
 

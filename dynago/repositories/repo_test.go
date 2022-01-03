@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/KirkDiggler/go-projects/tools/dynago/entities"
+
 	"github.com/KirkDiggler/go-projects/dynamo"
 	"github.com/KirkDiggler/go-projects/tools/dynago/mappings"
 	"github.com/KirkDiggler/go-projects/tools/dynago/schemas"
@@ -31,7 +33,7 @@ func TestNew(t *testing.T) {
 		})
 
 		existing := &schemas.Mapping{
-			Table: &mappings.Entity{
+			Table: &entities.Mapping{
 				PartitionFields: []string{"sku"},
 				SortFields:      []string{"sku"},
 			},

@@ -3,8 +3,16 @@ package mappings
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+)
+
+const (
+	requiredLookupConfig         = "mappings.NewLookup requires a LookupConfig"
+	requiredLookupMappingNameMsg = "mappings.NewLookup requires LookupConfig.MappingName to be set"
+	requiredLookupFieldsMsg      = "mappings.NewLookup requires LookupConfig.Fields to be set"
 )
 
 type lookupMapping struct {
@@ -19,12 +27,16 @@ type LookupConfig struct {
 }
 
 func NewLookup(cfg *LookupConfig) (*lookupMapping, error) {
-	if cfg.MappingName == "" {
-		return nil, errors.New("Lookup lookupMapping requires a lookupMapping name to be set")
+	if cfg == nil {
+		return nil, errors.New(requiredLookupConfig)
+	}
+
+	if strings.TrimSpace(cfg.MappingName) == "" {
+		return nil, errors.New(requiredLookupMappingNameMsg)
 	}
 
 	if len(cfg.Fields) == 0 {
-		return nil, errors.New("Lookup lookupMapping requires at least 1 field set")
+		return nil, errors.New(requiredLookupFieldsMsg)
 	}
 
 	fieldMap := make(map[string]bool)
@@ -40,12 +52,35 @@ func NewLookup(cfg *LookupConfig) (*lookupMapping, error) {
 	}, nil
 }
 
-func (m *lookupMapping) BuildPartitionValues(ctx context.Context, values map[string]*types.AttributeValue) (string, error) {
-	return "", nil
+func (m *lookupMapping) buildValues(ctx context.Context, values map[string]types.AttributeValue) (string, error) {
+	var sb = strings.Builder{}
+	for _, field := range m.fields {
+		if _, ok := values[field]; !ok {
+			return "", fmt.Errorf("required field '%s' was not found in provided values", field)
+		}
+
+		_, err := fmt.Fprintf(&sb, "%s%s%s",
+			setCasing(field),
+			getFieldSeparator(),
+			setCasing(attributeValueToString(values[field])))
+		if err != nil {
+			return "", fmt.Errorf("error returned when formatting partition field. original error: %s", err)
+		}
+	}
+
+	return sb.String(), nil
 }
 
-func (m *lookupMapping) BuildSortValues(ctx context.Context, values map[string]*types.AttributeValue) (string, error) {
-	return "", nil
+func (m *lookupMapping) BuildPartitionValues(ctx context.Context, values map[string]types.AttributeValue) (string, error) {
+	return m.buildValues(ctx, values)
+}
+
+func (m *lookupMapping) BuildSortValues(ctx context.Context, values map[string]types.AttributeValue) (string, error) {
+	return m.buildValues(ctx, values)
+}
+
+func (m *lookupMapping) GetName() string {
+	return m.mappingName
 }
 
 func (m *lookupMapping) GetPartitionFields() []string {
