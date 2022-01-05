@@ -90,7 +90,7 @@ func TestLookupMapping_BuildPartitionValues(t *testing.T) {
 	t.Run("it builds the partition values", func(t *testing.T) {
 		actual, err := fixture.BuildPartitionValues(ctx, validValues)
 
-		expected := "CATEGORY#SNEAKERSNAME#RED OCTOBER"
+		expected := "CATEGORY#SNEAKERS#NAME#RED OCTOBER"
 
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
