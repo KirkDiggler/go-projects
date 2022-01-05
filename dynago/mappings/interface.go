@@ -10,13 +10,13 @@ import (
 
 type Entity interface {
 	GetName() string
-	GetType() entities.MappingType
-	GetPartitionFields() []string
-	GetSortFields() []string
 }
 
 type Interface interface {
-	Entity
+	GetName() string
+	GetType() entities.MappingType
+	GetPartitionFields() []string
+	GetSortFields() []string
 	BuildPartitionValues(ctx context.Context, values map[string]types.AttributeValue) (string, error)
 	BuildSortValues(ctx context.Context, values map[string]types.AttributeValue) (string, error)
 }
