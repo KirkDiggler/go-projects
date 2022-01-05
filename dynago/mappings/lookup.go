@@ -97,3 +97,12 @@ func (m *lookup) GetPartitionFields() []string {
 func (m *lookup) GetSortFields() []string {
 	return m.fields
 }
+
+func (m *lookup) ToEntity() *entities.Mapping {
+	return &entities.Mapping{
+		Name:            m.mappingName,
+		Type:            entities.MappingType_Lookup,
+		PartitionFields: m.fields,
+		SortFields:      m.fields,
+	}
+}

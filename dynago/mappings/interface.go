@@ -19,4 +19,6 @@ type Interface interface {
 	GetSortFields() []string
 	BuildPartitionValues(ctx context.Context, values map[string]types.AttributeValue) (string, error)
 	BuildSortValues(ctx context.Context, values map[string]types.AttributeValue) (string, error)
+
+	ToEntity() *entities.Mapping
 }

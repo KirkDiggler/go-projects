@@ -128,3 +128,12 @@ func (m *query) GetPartitionFields() []string {
 func (m *query) GetSortFields() []string {
 	return m.sortFields
 }
+
+func (m *query) ToEntity() *entities.Mapping {
+	return &entities.Mapping{
+		Name:            m.mappingName,
+		Type:            entities.MappingType_Query,
+		PartitionFields: m.partitionFields,
+		SortFields:      m.sortFields,
+	}
+}

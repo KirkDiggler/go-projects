@@ -8,8 +8,8 @@ import "github.com/KirkDiggler/go-projects/tools/dynago/mappings"
 //
 // Maps the table schema to a repositories mapping and is persisted for validation of changes
 type Mapping struct {
-	Table mappings.Entity
+	Table mappings.Interface
 
 	// Indexes is a map[IndexName] to dynago mapping
-	Indexes map[string]mappings.Index
+	Indexes map[string]*mappings.Index
 }

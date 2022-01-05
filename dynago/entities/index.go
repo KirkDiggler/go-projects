@@ -8,7 +8,7 @@ const (
 )
 
 type Index struct {
-	Name           string
+	Name           string // Gets set when loading from entity TODO: find a better way to keep this internal
 	ProjectionType ProjectionType
 	Mapping        *Mapping
 }
