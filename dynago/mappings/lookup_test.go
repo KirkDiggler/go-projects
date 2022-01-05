@@ -60,8 +60,8 @@ func TestNewLookup(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
 
-		assert.Equal(t, validFields, actual.fields)
-		assert.Equal(t, validMappingName, actual.mappingName)
+		assert.Equal(t, validFields, actual.(*lookup).fields)
+		assert.Equal(t, validMappingName, actual.(*lookup).mappingName)
 	})
 }
 
@@ -107,7 +107,7 @@ func TestLookupMapping_BuildSortValues(t *testing.T) {
 	})
 
 	invalidValues := map[string]types.AttributeValue{
-		"category": &types.AttributeValueMemberS{Value: "sneakers"},
+		"Category": &types.AttributeValueMemberS{Value: "sneakers"},
 		"Name":     &types.AttributeValueMemberS{Value: "Red October"},
 	}
 	validValues := map[string]types.AttributeValue{
@@ -119,12 +119,12 @@ func TestLookupMapping_BuildSortValues(t *testing.T) {
 
 		_, err := fixture.BuildSortValues(ctx, invalidValues)
 
-		assert.Equal(t, errors.New("required field 'name' was not found in provided values"), err)
+		assert.Equal(t, errors.New("required field 'category' was not found in provided values"), err)
 	})
 	t.Run("it builds the partition values", func(t *testing.T) {
 		actual, err := fixture.BuildSortValues(ctx, validValues)
 
-		expected := "CATEGORY#SNEAKERSNAME#RED OCTOBER"
+		expected := "CATEGORY#SNEAKERS#NAME#RED OCTOBER"
 
 		assert.Nil(t, err)
 		assert.NotNil(t, actual)
