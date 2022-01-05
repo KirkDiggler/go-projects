@@ -1,14 +1,9 @@
 package mappings
 
-type ProjectionType string
-
-const (
-	PropjectionTypeAll      ProjectionType = "ALL"
-	PropjectionTypeKeysOnly ProjectionType = "KEYS_ONLY"
-)
+import "github.com/KirkDiggler/go-projects/tools/dynago/entities"
 
 type Index struct {
 	Name           string
-	ProjectionType ProjectionType
+	ProjectionType entities.ProjectionType
 	Mapping        Interface
 }

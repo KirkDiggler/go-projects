@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/KirkDiggler/go-projects/tools/dynago/entities"
+
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
@@ -81,6 +83,10 @@ func (m *lookupMapping) BuildSortValues(ctx context.Context, values map[string]t
 
 func (m *lookupMapping) GetName() string {
 	return m.mappingName
+}
+
+func (m *lookupMapping) GetType() entities.MappingType {
+	return entities.MappingType_Lookup
 }
 
 func (m *lookupMapping) GetPartitionFields() []string {
