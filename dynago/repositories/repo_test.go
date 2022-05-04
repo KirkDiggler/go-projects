@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/KirkDiggler/go-projects/tools/dynago/entities"
+	"github.com/KirkDiggler/go-projects/tools/dynago/internal/entities"
 
 	"github.com/KirkDiggler/go-projects/dynamo"
 	"github.com/KirkDiggler/go-projects/tools/dynago/mappings"
